@@ -112,8 +112,9 @@ template<typename Result>
 class resolve_task final : public task<Result>
 {
   public:
-    explicit resolve_task(Result&& val)
-      : m_val{std::forward<Result>(val)}
+    template<typename T>
+    explicit resolve_task(T&& val)
+      : m_val{std::forward<T>(val)}
     {}
 
     Result run() final
@@ -139,8 +140,9 @@ template<typename Result, typename Error>
 class reject_task final : public task<Result>
 {
   public:
-    explicit reject_task(Error error)
-      : m_error{std::move(error)}
+    template<typename T>
+    explicit reject_task(T&& error)
+      : m_error{std::forward<T>(error)}
     {}
 
     Result run() final
@@ -157,9 +159,10 @@ template<typename Result, typename Func, typename... Args>
 class initial_task final : public task<Result>
 {
   public:
-    explicit initial_task(Func&& func, Args&&... args)
-      : m_func{std::forward<Func>(func)}
-      , m_args{std::forward<Args>(args)...}
+    template<typename Func_, typename... Args_>
+    explicit initial_task(Func_&& func, Args_&&... args)
+      : m_func{std::forward<Func_>(func)}
+      , m_args{std::forward<Args_>(args)...}
     {}
 
     Result run() final
@@ -177,9 +180,10 @@ template<typename Func, typename... Args>
 class initial_task<void, Func, Args...> final : public task<void>
 {
   public:
-    explicit initial_task(Func&& func, Args&&... args)
-      : m_func{std::forward<Func>(func)}
-      , m_args{std::forward<Args>(args)...}
+    template<typename Func_, typename... Args_>
+    explicit initial_task(Func_&& func, Args_&&... args)
+      : m_func{std::forward<Func_>(func)}
+      , m_args{std::forward<Args_>(args)...}
     {}
 
     void run() final
@@ -210,9 +214,10 @@ template<typename Result, typename ParentResult, typename Func>
 class then_task final : public next_task<Result, ParentResult>
 {
   public:
-    then_task(task_ptr<ParentResult> parent, Func&& func)
+    template<typename T>
+    then_task(task_ptr<ParentResult> parent, T&& func)
       : next_task<Result, ParentResult>{std::move(parent)}
-      , m_func{std::forward<Func>(func)}
+      , m_func{std::forward<T>(func)}
     {}
 
     Result run() final
@@ -229,9 +234,10 @@ template<typename Result, typename ParentResult, typename Func>
 class then_task_void final : public next_task<Result, ParentResult>
 {
   public:
-    then_task_void(task_ptr<ParentResult> parent, Func&& func)
+    template<typename T>
+    then_task_void(task_ptr<ParentResult> parent, T&& func)
       : next_task<Result, ParentResult>{std::move(parent)}
-      , m_func{std::forward<Func>(func)}
+      , m_func{std::forward<T>(func)}
     {}
 
     Result run() final
@@ -249,9 +255,10 @@ template<typename Result, typename ParentResult, typename Func>
 class fail_task final : public next_task<Result, ParentResult>
 {
   public:
-    fail_task(task_ptr<ParentResult> parent, Func&& func)
+    template<typename T>
+    fail_task(task_ptr<ParentResult> parent, T&& func)
       : next_task<Result, ParentResult>{std::move(parent)}
-      , m_func{std::forward<Func>(func)}
+      , m_func{std::forward<T>(func)}
     {}
 
     Result run() final
@@ -275,9 +282,10 @@ template<typename Result, typename ParentResult, typename Func>
 class fail_task_void final : public next_task<Result, ParentResult>
 {
   public:
-    fail_task_void(task_ptr<ParentResult> parent, Func&& func)
+    template<typename T>
+    fail_task_void(task_ptr<ParentResult> parent, T&& func)
       : next_task<Result, ParentResult>{std::move(parent)}
-      , m_func{std::forward<Func>(func)}
+      , m_func{std::forward<T>(func)}
     {}
 
     Result run() final
@@ -460,7 +468,7 @@ template<typename Result, typename ParentResult,
 class next_functions_task : public next_task<Result, ParentResult>
 {
   public:
-    explicit next_functions_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
+    next_functions_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
       : next_task<Result, ParentResult>{std::move(parent)}
       , m_funcs{std::move(funcs)}
     {}
