@@ -231,6 +231,11 @@ template<typename Result>
 class task
 {
   public:
+    task() = default;
+    task(const task<Result>&) = default;
+    task(task<Result>&&) = default;
+    task& operator=(const task<Result>&) = default;
+    task& operator=(task<Result>&&) = default;
     virtual ~task() = default;
     virtual Result run() = 0;
 };

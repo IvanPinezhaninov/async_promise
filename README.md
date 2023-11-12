@@ -179,8 +179,8 @@ auto future1 = async::promise<void>::resolve()
                .run();
 
 auto future2 = async::promise<void>::reject(std::runtime_error{"I'm an error"})
-                .finally([] { return "Hello World!"; })
-                .run();
+               .finally([] { return "Hello World!"; })
+               .run();
 
 std::cout << future1.get() << std::endl; // prints "Hello World!"
 std::cout << future2.get() << std::endl; // prints "Hello World!"
