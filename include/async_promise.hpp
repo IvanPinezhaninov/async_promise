@@ -446,6 +446,33 @@ class fail_task_void final : public next_task<Result, ParentResult>
 };
 
 
+template<typename Result, typename ParentResult, typename Func>
+class finally_task final : public next_task<Result, ParentResult>
+{
+  public:
+    template<typename T>
+    finally_task(task_ptr<ParentResult> parent, T&& func)
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_func{std::forward<T>(func)}
+    {}
+
+    Result run() final
+    {
+      try
+      {
+        this->m_parent->run();
+      }
+      catch(...)
+      {}
+
+      return m_func();
+    }
+
+  private:
+    Func m_func;
+};
+
+
 template<typename Result, typename ParentResult,
          template<typename, typename> class Container, typename Func, typename Allocator>
 class all_task final : public next_task<Result, ParentResult>
@@ -1239,6 +1266,19 @@ class promise
     promise<Result> fail(Func&& func) const
     {
       using task = internal::fail_task_void<Result, T, Func>;
+      return promise<Result>{std::make_shared<task>(m_task, std::forward<Func>(func))};
+    }
+
+
+    /**
+     * @brief Add a function to be called if the previous function was either resolved or rejected.
+     * @param func - Function that not receives any result of the previous function.
+     * @return Promise object.
+     */
+    template<typename Func, typename Result = typename std::result_of<Func()>::type>
+    promise<Result> finally(Func&& func) const
+    {
+      using task = internal::finally_task<Result, T, Func>;
       return promise<Result>{std::make_shared<task>(m_task, std::forward<Func>(func))};
     }
 

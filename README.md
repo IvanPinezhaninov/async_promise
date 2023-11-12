@@ -6,7 +6,7 @@
 
 Promises/A+ asynchronous C++11 header-only library
 
-The library is designed to create and run a chain of function. The chain runs asynchronously and returns `std::future`. The library supports the `then`, `all`, `all_settled`, `any`, `race` methods and the `fail` method for handling exceptions of previously called functions
+The library is designed to create and run a chain of function. The chain runs asynchronously and returns `std::future`. The library supports the `then`, `all`, `all_settled`, `any`, `race`, `fail` and `finally` methods
 
 ## Documentation
 
@@ -169,6 +169,21 @@ auto future = async::promise<int>{error}
               .run();
 
 std::cout << future.get() << std::endl; // prints -1
+```
+
+To add the next function to a chain that will be called on both resolved and rejected, the `finally` method can be used
+
+```cpp
+auto future1 = async::promise<void>::resolve()
+               .finally([] { return "Hello World!"; })
+               .run();
+
+auto future2 = async::promise<void>::reject(std::runtime_error{"I'm an error"})
+                .finally([] { return "Hello World!"; })
+                .run();
+
+std::cout << future1.get() << std::endl; // prints "Hello World!"
+std::cout << future2.get() << std::endl; // prints "Hello World!"
 ```
 
 ## Build and test

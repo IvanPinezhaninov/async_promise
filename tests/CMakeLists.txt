@@ -43,6 +43,7 @@ set(SOURCES
   src/all_settled.cpp
   src/any.cpp
   src/fail.cpp
+  src/finally.cpp
   src/funcs.cpp
   src/initial.cpp
   src/race.cpp
