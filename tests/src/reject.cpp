@@ -19,6 +19,7 @@
 #include <async_promise.hpp>
 
 // catch2
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 static constexpr auto str = "Hello World!";
@@ -28,5 +29,5 @@ TEST_CASE("Reject", "[reject]")
 {
   auto future = async::promise<void>::reject(std::runtime_error{str}).run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }

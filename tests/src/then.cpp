@@ -19,6 +19,7 @@
 #include <async_promise.hpp>
 
 // catch2
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 // local
@@ -29,7 +30,7 @@ static constexpr auto str = "Hello World!";
 
 TEST_CASE("Then void void", "[then]")
 {
-  auto future = async::promise<void>::resolve().then(void_void_func).run();
+  auto future = async::promise<void>::resolve().then(void_void).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -37,15 +38,15 @@ TEST_CASE("Then void void", "[then]")
 
 TEST_CASE("Then error void void", "[then]")
 {
-  auto future = async::promise<void>::resolve().then(error_void_void_func).run();
+  auto future = async::promise<void>::resolve().then(error_void_void).run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }
 
 
 TEST_CASE("Then void void ignore arg", "[then]")
 {
-  auto future = async::promise<std::string>::resolve(str).then(void_void_func).run();
+  auto future = async::promise<std::string>::resolve(str).then(void_void).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -53,15 +54,15 @@ TEST_CASE("Then void void ignore arg", "[then]")
 
 TEST_CASE("Then error void void ignore arg", "[then]")
 {
-  auto future = async::promise<std::string>::resolve(str).then(error_void_void_func).run();
+  auto future = async::promise<std::string>::resolve(str).then(error_void_void).run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }
 
 
 TEST_CASE("Then void string", "[then]")
 {
-  auto future = async::promise<std::string>::resolve(str).then(void_string_func).run();
+  auto future = async::promise<std::string>::resolve(str).then(void_string).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -69,15 +70,15 @@ TEST_CASE("Then void string", "[then]")
 
 TEST_CASE("Then error void string", "[then]")
 {
-  auto future = async::promise<std::string>::resolve(str).then(error_void_string_func).run();
+  auto future = async::promise<std::string>::resolve(str).then(error_void_string).run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }
 
 
 TEST_CASE("Then string void", "[then]")
 {
-  auto future = async::promise<void>::resolve().then(string_void_func).run();
+  auto future = async::promise<void>::resolve().then(string_void).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -87,15 +88,15 @@ TEST_CASE("Then string void", "[then]")
 
 TEST_CASE("Then error string void", "[then]")
 {
-  auto future = async::promise<void>::resolve().then(error_string_void_func).run();
+  auto future = async::promise<void>::resolve().then(error_string_void).run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }
 
 
 TEST_CASE("Then string void ignore arg", "[then]")
 {
-  auto future = async::promise<std::string>::resolve(str).then(string_void_func).run();
+  auto future = async::promise<std::string>::resolve(str).then(string_void).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -105,15 +106,15 @@ TEST_CASE("Then string void ignore arg", "[then]")
 
 TEST_CASE("Then error string void ignore arg", "[then]")
 {
-  auto future = async::promise<std::string>::resolve(str).then(error_string_void_func).run();
+  auto future = async::promise<std::string>::resolve(str).then(error_string_void).run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }
 
 
 TEST_CASE("Then string string", "[then]")
 {
-  auto future = async::promise<std::string>::resolve(str).then(string_string_func).run();
+  auto future = async::promise<std::string>::resolve(str).then(string_string).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -123,7 +124,7 @@ TEST_CASE("Then string string", "[then]")
 
 TEST_CASE("Then error string string", "[then]")
 {
-  auto future = async::promise<std::string>::resolve(str).then(error_string_string_func).run();
+  auto future = async::promise<std::string>::resolve(str).then(error_string_string).run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }

@@ -19,6 +19,7 @@
 #include <async_promise.hpp>
 
 // catch2
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 // local
@@ -29,7 +30,7 @@ static constexpr auto str = "Hello World!";
 
 TEST_CASE("Initial void void", "[initial]")
 {
-  auto future = async::promise<void>{void_void_func}.run();
+  auto future = async::promise<void>{void_void}.run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -37,15 +38,15 @@ TEST_CASE("Initial void void", "[initial]")
 
 TEST_CASE("Initial error void void", "[initial]")
 {
-  auto future = async::promise<void>{error_void_void_func}.run();
+  auto future = async::promise<void>{error_void_void}.run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }
 
 
 TEST_CASE("Initial void string", "[initial]")
 {
-  auto future = async::promise<void>{void_string_func, str}.run();
+    auto future = async::promise<void>{void_string, str}.run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -53,15 +54,15 @@ TEST_CASE("Initial void string", "[initial]")
 
 TEST_CASE("Initial error void string", "[initial]")
 {
-  auto future = async::promise<void>{error_void_string_func, str}.run();
+  auto future = async::promise<void>{error_void_string, str}.run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }
 
 
 TEST_CASE("Initial string void", "[initial]")
 {
-  auto future = async::promise<std::string>{string_void_func}.run();
+  auto future = async::promise<std::string>{string_void}.run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -71,15 +72,15 @@ TEST_CASE("Initial string void", "[initial]")
 
 TEST_CASE("Initial error string void", "[initial]")
 {
-  auto future = async::promise<std::string>{error_string_void_func}.run();
+  auto future = async::promise<std::string>{error_string_void}.run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }
 
 
 TEST_CASE("Initial string string", "[initial]")
 {
-  auto future = async::promise<std::string>{string_string_func, str}.run();
+  auto future = async::promise<std::string>{string_string, str}.run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -89,7 +90,7 @@ TEST_CASE("Initial string string", "[initial]")
 
 TEST_CASE("Initial error string string", "[initial]")
 {
-  auto future = async::promise<std::string>{error_string_string_func, str}.run();
+  auto future = async::promise<std::string>{error_string_string, str}.run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }

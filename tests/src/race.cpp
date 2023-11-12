@@ -23,6 +23,7 @@
 #include <async_promise.hpp>
 
 // catch2
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 static constexpr auto str = "Hello World!";
@@ -52,7 +53,7 @@ TEST_CASE("Race error won void void", "[race]")
 
   auto future = async::promise<void>::resolve().race(void_void).run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }
 
 
@@ -94,7 +95,7 @@ TEST_CASE("Race error won void string", "[race]")
 
   auto future = async::promise<std::string>::resolve(str).race(void_str).run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }
 
 
@@ -139,7 +140,7 @@ TEST_CASE("Race error won string void", "[race]")
   auto future = async::promise<void>::resolve().race(str_void).run();
 
   std::string res;
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(res = future.get(), std::runtime_error, Catch::Matchers::Message(str));
   REQUIRE(res.empty());
 }
 
@@ -187,7 +188,7 @@ TEST_CASE("Race error won string string", "[race]")
   auto future = async::promise<std::string>::resolve(str).race(str_str).run();
 
   std::string res;
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(res = future.get(), std::runtime_error, Catch::Matchers::Message(str));
   REQUIRE(res.empty());
 }
 

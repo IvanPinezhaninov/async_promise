@@ -24,7 +24,7 @@
 static constexpr auto str = "Hello World!";
 
 
-TEST_CASE("Resolve void", "[reject]")
+TEST_CASE("Resolve void", "[resolve]")
 {
   auto future = async::promise<void>::resolve().run();
 
@@ -32,7 +32,7 @@ TEST_CASE("Resolve void", "[reject]")
 }
 
 
-TEST_CASE("Resolve string", "[reject]")
+TEST_CASE("Resolve string", "[resolve]")
 {
   auto future = async::promise<std::string>::resolve(str).run();
 

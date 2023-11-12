@@ -7,55 +7,55 @@
 static constexpr auto str = "Hello World!";
 
 
-void void_void_func()
+void void_void()
 {}
 
 
-void error_void_void_func()
+void error_void_void()
 {
   throw std::runtime_error{str};
 }
 
 
-void void_string_func(std::string str)
+void void_string(std::string str)
 {}
 
 
-void error_void_string_func(std::string str)
+void error_void_string(std::string str)
 {
   throw std::runtime_error{str};
 }
 
 
-void void_exception_func(std::exception_ptr e)
+void void_exception(std::exception_ptr e)
 {}
 
 
-std::string string_void_func()
+std::string string_void()
 {
   return str;
 }
 
 
-std::string error_string_void_func()
+std::string error_string_void()
 {
   throw std::runtime_error{str};
 }
 
 
-std::string string_string_func(std::string str)
+std::string string_string(std::string str)
 {
   return str;
 }
 
 
-std::string error_string_string_func(std::string str)
+std::string error_string_string(std::string str)
 {
   throw std::runtime_error{str};
 }
 
 
-std::string string_exception_func(std::exception_ptr e)
+std::string string_exception(std::exception_ptr e)
 {
   try
   {

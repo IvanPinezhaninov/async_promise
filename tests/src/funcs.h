@@ -22,24 +22,24 @@
 #include <string>
 
 
-void void_void_func();
+void void_void();
 
-void error_void_void_func();
+void error_void_void();
 
-void void_string_func(std::string str);
+void void_string(std::string str);
 
-void error_void_string_func(std::string str);
+void error_void_string(std::string str);
 
-void void_exception_func(std::exception_ptr e);
+void void_exception(std::exception_ptr e);
 
-std::string string_void_func();
+std::string string_void();
 
-std::string error_string_void_func();
+std::string error_string_void();
 
-std::string string_string_func(std::string str);
+std::string string_string(std::string str);
 
-std::string error_string_string_func(std::string str);
+std::string error_string_string(std::string str);
 
-std::string string_exception_func(std::exception_ptr e);
+std::string string_exception(std::exception_ptr e);
 
 #endif // FUNCS_H

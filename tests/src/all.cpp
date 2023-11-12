@@ -19,6 +19,7 @@
 #include <async_promise.hpp>
 
 // catch2
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 static constexpr auto str = "Hello World!";
@@ -26,13 +27,13 @@ static constexpr auto str = "Hello World!";
 
 TEST_CASE("All void void", "[all]")
 {
-  std::vector<void(*)()> void_void
+  std::vector<void(*)()> funcs
   {
     [] () {},
     [] () {},
   };
 
-  auto future = async::promise<void>::resolve().all(void_void).run();
+  auto future = async::promise<void>::resolve().all(funcs).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -40,27 +41,27 @@ TEST_CASE("All void void", "[all]")
 
 TEST_CASE("All error void void", "[all]")
 {
-  std::vector<void(*)()> void_void
+  std::vector<void(*)()> funcs
   {
     [] () {},
     [] () { throw std::runtime_error{str}; },
   };
 
-  auto future = async::promise<void>::resolve().all(void_void).run();
+  auto future = async::promise<void>::resolve().all(funcs).run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }
 
 
 TEST_CASE("All void string", "[all]")
 {
-  std::vector<void(*)(std::string)> void_str
+  std::vector<void(*)(std::string)> funcs
   {
     [] (std::string) {},
     [] (std::string) {},
   };
 
-  auto future = async::promise<std::string>::resolve(str).all(void_str).run();
+  auto future = async::promise<std::string>::resolve(str).all(funcs).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -68,27 +69,27 @@ TEST_CASE("All void string", "[all]")
 
 TEST_CASE("All error void string", "[all]")
 {
-  std::vector<void(*)(std::string)> void_str
+  std::vector<void(*)(std::string)> funcs
   {
     [] (std::string) {},
     [] (std::string) { throw std::runtime_error{str}; },
   };
 
-  auto future = async::promise<std::string>::resolve(str).all(void_str).run();
+  auto future = async::promise<std::string>::resolve(str).all(funcs).run();
 
-  REQUIRE_THROWS_AS(future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }
 
 
 TEST_CASE("All string void", "[all]")
 {
-  std::vector<std::string(*)()> str_void
+  std::vector<std::string(*)()> funcs
   {
     [] () { return std::string{str}; },
     [] () { return std::string{str}; },
   };
 
-  auto future = async::promise<void>::resolve().all(str_void).run();
+  auto future = async::promise<void>::resolve().all(funcs).run();
 
   std::vector<std::string> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -100,29 +101,29 @@ TEST_CASE("All string void", "[all]")
 
 TEST_CASE("All error string void", "[all]")
 {
-  std::vector<std::string(*)()> str_void
+  std::vector<std::string(*)()> funcs
   {
     [] () { return std::string{str}; },
     [] () -> std::string { throw std::runtime_error{str}; },
   };
 
-  auto future = async::promise<void>::resolve().all(str_void).run();
+  auto future = async::promise<void>::resolve().all(funcs).run();
 
   std::vector<std::string> res;
-  REQUIRE_THROWS_AS(res = future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(res = future.get(), std::runtime_error, Catch::Matchers::Message(str));
   REQUIRE(res.empty());
 }
 
 
 TEST_CASE("All string string", "[all]")
 {
-  std::vector<std::string(*)(std::string)> str_str
+  std::vector<std::string(*)(std::string)> funcs
   {
     [] (std::string str) { return str; },
     [] (std::string str) { return str; },
   };
 
-  auto future = async::promise<std::string>::resolve(str).all(str_str).run();
+  auto future = async::promise<std::string>::resolve(str).all(funcs).run();
 
   std::vector<std::string> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -134,15 +135,15 @@ TEST_CASE("All string string", "[all]")
 
 TEST_CASE("All error string string", "[all]")
 {
-  std::vector<std::string(*)(std::string)> str_str
+  std::vector<std::string(*)(std::string)> funcs
   {
     [] (std::string str) { return str; },
     [] (std::string str) -> std::string { throw std::runtime_error{str}; },
   };
 
-  auto future = async::promise<std::string>::resolve(str).all(str_str).run();
+  auto future = async::promise<std::string>::resolve(str).all(funcs).run();
 
   std::vector<std::string> res;
-  REQUIRE_THROWS_AS(res = future.get(), std::runtime_error);
+  REQUIRE_THROWS_MATCHES(res = future.get(), std::runtime_error, Catch::Matchers::Message(str));
   REQUIRE(res.empty());
 }
