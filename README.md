@@ -6,7 +6,7 @@
 
 Promises/A+ asynchronous C++11 header-only library
 
-The library is designed to create and run a chain of function. The chain runs asynchronously and returns `std::future`. Currently the library supports the `then`, `all`, `any`, `race` methods and the `fail` method for handling exceptions of previously called functions
+The library is designed to create and run a chain of function. The chain runs asynchronously and returns `std::future`. The library supports the `then`, `all`, `all_settled`, `any`, `race` methods and the `fail` method for handling exceptions of previously called functions
 
 ## Documentation
 
@@ -50,7 +50,7 @@ auto future = async::promise<int>{[] { return 2; }}
 std::cout << future.get() << std::endl; // prints 4
 ```
 
-The `all` method accepts a container with functions. Each container function processes the value returned by the previous function asynchronously. Upon completion of all functions, the method will return a container with the results of all functions in the same order as the functions in the incoming container. If an error occurs during the execution of any of the functions, an exception will be thrown
+The `all` method accepts an iterable of functions. Each function asynchronously processes the return value of the previous function. When all functions have completed, the method will return an iterable with the results of functions in the same order as the functions in the incoming iterable. If an error occurs while executing functions, it will be thrown
 
 ```cpp
 std::vector<int(*)(int)> funcs
@@ -64,7 +64,21 @@ auto p = async::promise<int>{[] { return 2; }}
          .run();
 ```
 
-The `any` method accepts a container with functions. Each container function processes the value returned by the previous function asynchronously. The result of the method will be the result of the first function that completes successfully. If all functions fail, an `async::aggregate_error` exception will be thrown
+The `all_settled` method accepts an iterable of functions. Each function asynchronously processes the return value of the previous function. When all functions have completed, the method will return an iterable with a special settled object that contains either a result or an error of functions in the same order as the functions in the incoming iterable.
+
+```cpp
+std::vector<int(*)(int)> funcs
+{
+  [] (int x) { return x * 2; },
+  [] (int x) { return x * 4; },
+};
+
+auto p = async::promise<int>{[] { return 2; }}
+         .all_settled(funcs)
+         .run();
+```
+
+The `any` method accepts an iterable of functions. Each function asynchronously processes the return value of the previous function. The result of the method will be the result of the first function that completes successfully. If all functions fail, an `async::aggregate_error` exception will be thrown
 
 ```cpp
 std::vector<int(*)(int)> funcs
@@ -78,7 +92,7 @@ auto p = async::promise<int>{[] { return 2; }}
          .run();
 ```
 
-The `race` method accepts a container with functions. Each container function processes the value returned by the previous function asynchronously. The result of the method will be the result or exception of the first completed function
+The `race` method accepts an iterable of functions. Each function asynchronously processes the return value of the previous function. The result of the method will be the result or error of the first completed function
 
 ```cpp
 std::vector<int(*)(int)> funcs
@@ -92,7 +106,7 @@ auto p = async::promise<int>{[] { return 2; }}
          .run();
 ```
 
-In the `all`, `any` and `race` methods it is allowed to use containers with functions without an argument if it is not necessary to process the value returned by the previous function
+In the `all`, `all_settled`, `any` and `race` methods it is allowed to use iterable with functions without an argument if it is not necessary to process the value returned by the previous function
 
 ```cpp
 std::vector<int(*)()> funcs

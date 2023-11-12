@@ -47,6 +47,137 @@ struct aggregate_error final : public std::exception
 };
 
 
+/**
+ * @brief Function execution result.
+ */
+enum class settle_type
+{
+  resolved, //!< Function completed successfully.
+  rejected, //!< Function completed with an error.
+};
+
+
+/**
+ * @brief Result of @ref async::promise::all_settled call.
+ */
+template<typename Result>
+struct settled final
+{
+  using result_type = Result;
+
+  /**
+   * @brief Constructor of resolved object.
+   * @param result - Function call result.
+   */
+  explicit settled(Result result)
+    : type{settle_type::resolved}
+    , result{std::move(result)}
+  {}
+
+  /**
+   * @brief Constructor of rejected object.
+   * @param error - Function call error.
+   */
+  explicit settled(std::exception_ptr error)
+    : type{settle_type::rejected}
+    , error{std::move(error)}
+  {}
+
+  settled(const settled& other)
+    : type{other.type}
+  {
+    if (settle_type::resolved == type)
+      ::new(&result) Result{other.result};
+    else
+      ::new(&error) std::exception_ptr{other.error};
+  }
+
+  settled(settled&& other) noexcept
+    : type{other.type}
+  {
+    if (settle_type::resolved == type)
+      ::new(&result) Result{std::move(other.result)};
+    else
+      ::new(&error) std::exception_ptr{std::move(other.error)};
+  }
+
+  settled& operator=(const settled& other)
+  {
+    if (this != &other)
+      settled{other}.swap(*this);
+    return *this;
+  }
+
+  settled& operator=(settled&& other) noexcept
+  {
+    other.swap(*this);
+    return *this;
+  }
+
+  void swap(settled &other) noexcept
+  {
+    auto tmp = std::move(*this);
+    ::new(this) settled{std::move(other)};
+    ::new(&other) settled{std::move(tmp)};
+  }
+
+  ~settled()
+  {
+    if (settle_type::resolved == type)
+      result.~result_type();
+    else
+      error.~exception_ptr();
+  }
+
+  /**
+   * @brief @ref settle_type
+   */
+  settle_type type;
+
+  union
+  {
+    /**
+     * @brief Function call result if resolved
+     */
+    result_type result;
+
+    /**
+     * @brief Function call error if rejected
+     */
+    std::exception_ptr error;
+  };
+};
+
+
+/**
+ * @brief Result of @ref async::promise::all_settled call.
+ */
+template<>
+struct settled<void> final
+{
+  using result_type = void;
+
+  settled()
+    : type{settle_type::resolved}
+  {}
+
+  explicit settled(std::exception_ptr error)
+    : type{settle_type::rejected}
+    , error{std::move(error)}
+  {}
+
+  /**
+   * @brief @ref settle_type
+   */
+  settle_type type;
+
+  /**
+   * @brief Function call error if rejected
+   */
+  std::exception_ptr error;
+};
+
+
 namespace internal
 {
 
@@ -457,6 +588,180 @@ class all_task_void<void, ParentResult, Container, Func, Allocator> final : publ
 
 template<typename Result, typename ParentResult,
          template<typename, typename> class Container, typename Func, typename Allocator>
+class all_settled_task_rr final : public next_task<Result, ParentResult>
+{
+  public:
+    all_settled_task_rr(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_funcs{std::move(funcs)}
+    {}
+
+    Result run() final
+    {
+      using value_type = typename Result::value_type::result_type;
+      std::vector<std::future<value_type>> futures;
+      futures.reserve(m_funcs.size());
+
+      auto rv = this->m_parent->run();
+      for (auto func : m_funcs)
+        futures.push_back(std::async(std::launch::async, std::bind(func, rv)));
+
+      Result result;
+      this->reserve(result, m_funcs.size());
+
+      for (auto& future : futures)
+      {
+        try
+        {
+          result.emplace_back(future.get());
+        }
+        catch(...)
+        {
+          result.emplace_back(std::current_exception());
+        }
+      }
+
+      return result;
+    }
+
+  private:
+    Container<Func, Allocator> m_funcs;
+};
+
+
+template<typename Result, typename ParentResult,
+         template<typename, typename> class Container, typename Func, typename Allocator>
+class all_settled_task_rv final : public next_task<Result, ParentResult>
+{
+  public:
+    all_settled_task_rv(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_funcs{std::move(funcs)}
+    {}
+
+    Result run() final
+    {
+      using value_type = typename Result::value_type::result_type;
+      std::vector<std::future<value_type>> futures;
+      futures.reserve(m_funcs.size());
+
+      auto rv = this->m_parent->run();
+      for (auto func : m_funcs)
+        futures.push_back(std::async(std::launch::async, std::bind(func, rv)));
+
+      Result result;
+      this->reserve(result, m_funcs.size());
+
+      for (auto& future : futures)
+      {
+        try
+        {
+          future.get();
+          result.emplace_back();
+        }
+        catch(...)
+        {
+          result.emplace_back(std::current_exception());
+        }
+      }
+
+      return result;
+    }
+
+  private:
+    Container<Func, Allocator> m_funcs;
+};
+
+
+template<typename Result, typename ParentResult,
+         template<typename, typename> class Container, typename Func, typename Allocator>
+class all_settled_task_vr final : public next_task<Result, ParentResult>
+{
+  public:
+    all_settled_task_vr(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_funcs{std::move(funcs)}
+    {}
+
+    Result run() final
+    {
+      using value_type = typename Result::value_type::result_type;
+      std::vector<std::future<value_type>> futures;
+      futures.reserve(m_funcs.size());
+
+      this->m_parent->run();
+      for (auto&& func : m_funcs)
+        futures.push_back(std::async(std::launch::async, std::move(func)));
+
+      Result result;
+      this->reserve(result, m_funcs.size());
+
+      for (auto& future : futures)
+      {
+        try
+        {
+          result.emplace_back(future.get());
+        }
+        catch(...)
+        {
+          result.emplace_back(std::current_exception());
+        }
+      }
+
+      return result;
+    }
+
+  private:
+    Container<Func, Allocator> m_funcs;
+};
+
+
+template<typename Result, typename ParentResult,
+         template<typename, typename> class Container, typename Func, typename Allocator>
+class all_settled_task_vv final : public next_task<Result, ParentResult>
+{
+  public:
+    all_settled_task_vv(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_funcs{std::move(funcs)}
+    {}
+
+    Result run() final
+    {
+      using value_type = typename Result::value_type::result_type;
+      std::vector<std::future<value_type>> futures;
+      futures.reserve(m_funcs.size());
+
+      this->m_parent->run();
+      for (auto&& func : m_funcs)
+        futures.push_back(std::async(std::launch::async, std::move(func)));
+
+      Result result;
+      this->reserve(result, m_funcs.size());
+
+      for (auto& future : futures)
+      {
+        try
+        {
+          future.get();
+          result.emplace_back();
+        }
+        catch(...)
+        {
+          result.emplace_back(std::current_exception());
+        }
+      }
+
+      return result;
+    }
+
+  private:
+    Container<Func, Allocator> m_funcs;
+};
+
+
+template<typename Result, typename ParentResult,
+         template<typename, typename> class Container, typename Func, typename Allocator>
 class next_functions_task : public next_task<Result, ParentResult>
 {
   public:
@@ -843,6 +1148,9 @@ class race_task_void<void, ParentResult, Container, Func, Allocator> final
 } // namespace internal
 
 
+/**
+ * @brief Promise class.
+ */
 template<typename T>
 class promise
 {
@@ -877,7 +1185,7 @@ class promise
 
 
     /**
-     * @brief Add a function to be called next.
+     * @brief Add a function to be called if the previous function was resolved.
      * @param func - Function that receives the result of the previous function.
      * @return Promise object.
      */
@@ -892,7 +1200,7 @@ class promise
 
 
     /**
-     * @brief Add a function to be called next.
+     * @brief Add a function to be called if the previous function was resolved.
      * @param func - Function that not receives any result of the previous function.
      * @return Promise object.
      */
@@ -937,7 +1245,7 @@ class promise
 
     /**
      * @brief Add an iterable of functions to be called next.
-     *        It rejects when any of the functions rejects, with this first rejection reason.
+     *        Return an iterable of results or first rejection reason.
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
@@ -955,7 +1263,7 @@ class promise
 
     /**
      * @brief Add an iterable of functions to be called next.
-     *        It rejects when any of the functions rejects, with this first rejection reason.
+     *        Return an iterable of results or first rejection reason.
      * @param funcs - Functions that not receives any result of the previous function.
      * @return Promise object.
      */
@@ -972,7 +1280,7 @@ class promise
 
     /**
      * @brief Add an iterable of functions to be called next.
-     *        It rejects when any of the functions rejects, with this first rejection reason.
+     *        Return an iterable of results or first rejection reason.
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
@@ -989,7 +1297,7 @@ class promise
 
     /**
      * @brief Add an iterable of functions to be called next.
-     *        It rejects when any of the functions rejects, with this first rejection reason.
+     *        Return an iterable of results or first rejection reason.
      * @param funcs - Functions that not receives any result of the previous function.
      * @return Promise object.
      */
@@ -1004,7 +1312,80 @@ class promise
 
 
     /**
-     * @brief Add an iterable of functions to be called next. Return first resolved result.
+     * @brief Add an iterable of functions to be called next.
+     *        Return an iterable of @ref settled objects with a result or an error.
+     * @param funcs - Functions that receives the result of the previous function.
+     * @return Promise object.
+     */
+    template<template<typename, typename> class Container, typename Func, typename Allocator,
+             typename Arg = T, typename FuncResult = typename std::result_of<Func(Arg)>::type,
+             typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
+             typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
+             typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
+    promise<Result> all_settled(Container<Func, Allocator> funcs) const
+    {
+      using task = internal::all_settled_task_rr<Result, T, Container, Func, Allocator>;
+      return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
+    }
+
+
+    /**
+     * @brief Add an iterable of functions to be called next.
+     *        Return an iterable of @ref settled objects with a result or an error.
+     * @param funcs - Functions that receives the result of the previous function.
+     * @return Promise object.
+     */
+    template<template<typename, typename> class Container, typename Func, typename Allocator,
+             typename FuncResult = typename std::result_of<Func()>::type,
+             typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
+             typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
+    promise<Result> all_settled(Container<Func, Allocator> funcs) const
+    {
+      using task = internal::all_settled_task_vr<Result, T, Container, Func, Allocator>;
+      return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
+    }
+
+
+    /**
+     * @brief Add an iterable of functions to be called next.
+     *        Return an iterable of @ref settled objects with a result or an error.
+     * @param funcs - Functions that receives the result of the previous function.
+     * @return Promise object.
+     */
+    template<template<typename, typename> class Container, typename Func, typename Allocator,
+             typename Arg = T, typename FuncResult = typename std::result_of<Func(Arg)>::type,
+             typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
+             typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
+             typename = typename std::enable_if<std::is_void<FuncResult>::value>::type,
+             typename = typename std::true_type::type>
+    promise<Result> all_settled(Container<Func, Allocator> funcs) const
+    {
+      using task = internal::all_settled_task_rv<Result, T, Container, Func, Allocator>;
+      return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
+    }
+
+
+    /**
+     * @brief Add an iterable of functions to be called next.
+     *        Return an iterable of @ref settled objects with a result or an error.
+     * @param funcs - Functions that receives the result of the previous function.
+     * @return Promise object.
+     */
+    template<template<typename, typename> class Container, typename Func, typename Allocator,
+             typename FuncResult = typename std::result_of<Func()>::type,
+             typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
+             typename = typename std::enable_if<std::is_void<FuncResult>::value>::type,
+             typename = typename std::true_type::type>
+    promise<Result> all_settled(Container<Func, Allocator> funcs) const
+    {
+      using task = internal::all_settled_task_vv<Result, T, Container, Func, Allocator>;
+      return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
+    }
+
+
+    /**
+     * @brief Add an iterable of functions to be called next.
+     *        Return first resolved result.
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
@@ -1019,7 +1400,8 @@ class promise
 
 
     /**
-     * @brief Add an iterable of functions to be called next. Return first resolved result.
+     * @brief Add an iterable of functions to be called next.
+     *        Return first resolved result.
      * @param funcs - Functions that not receives any result of the previous function.
      * @return Promise object.
      */

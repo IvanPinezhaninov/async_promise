@@ -40,6 +40,7 @@ set(HEADERS
 
 set(SOURCES
   src/all.cpp
+  src/all_settled.cpp
   src/any.cpp
   src/fail.cpp
   src/funcs.cpp
