@@ -231,6 +231,7 @@ template<typename Result>
 class task
 {
   public:
+    virtual ~task() = default;
     virtual Result run() = 0;
 };
 
