@@ -206,6 +206,16 @@ class next_task : public task<Result>
     {}
 
   protected:
+    template<typename T>
+    void reserve(T&, std::size_t)
+    {}
+
+    template<typename T>
+    void reserve(std::vector<T>& v, std::size_t n)
+    {
+      v.reserve(n);
+    }
+
     task_ptr<ParentResult> m_parent;
 };
 
@@ -326,7 +336,7 @@ class all_task final : public next_task<Result, ParentResult>
         futures.push_back(std::async(std::launch::async, std::bind(func, rv)));
 
       Result result;
-      reserve(result, m_funcs.size());
+      this->reserve(result, m_funcs.size());
 
       for (auto& future : futures)
         result.push_back(future.get());
@@ -335,15 +345,6 @@ class all_task final : public next_task<Result, ParentResult>
     }
 
   private:
-    template<typename T>
-    void reserve(T&, std::size_t)
-    {}
-
-    void reserve(std::vector<typename Result::value_type>& v, std::size_t n)
-    {
-      v.reserve(n);
-    }
-
     Container<Func, Allocator> m_funcs;
 };
 
@@ -405,7 +406,7 @@ class all_task_void final : public next_task<Result, ParentResult>
         futures.push_back(std::async(std::launch::async, std::move(func)));
 
       Result result;
-      reserve(result, m_funcs.size());
+      this->reserve(result, m_funcs.size());
 
       for (auto& future : futures)
         result.push_back(future.get());
@@ -414,15 +415,6 @@ class all_task_void final : public next_task<Result, ParentResult>
     }
 
   private:
-    template<typename T>
-    void reserve(T&, std::size_t)
-    {}
-
-    void reserve(std::vector<typename Result::value_type>& v, std::size_t n)
-    {
-      v.reserve(n);
-    }
-
     Container<Func, Allocator> m_funcs;
 };
 
