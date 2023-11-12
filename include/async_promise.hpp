@@ -29,15 +29,18 @@
 namespace async
 {
 
-struct aggregate_error : public std::exception
+/**
+ * @brief All functions rejected error.
+ */
+struct aggregate_error final : public std::exception
 {
-  aggregate_error(std::vector<std::exception_ptr> errors) noexcept
+  explicit aggregate_error(std::vector<std::exception_ptr> errors) noexcept
     : errors{std::move(errors)}
   {}
 
   const char* what() const noexcept final
   {
-    return "All promises rejected";
+    return "All functions rejected";
   }
 
   std::vector<std::exception_ptr> errors;
