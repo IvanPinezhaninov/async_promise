@@ -884,7 +884,7 @@ class promise
     template<typename Func, typename Arg = T,
              typename Result = typename std::result_of<Func(Arg)>::type,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type>
-    promise<Result> then(Func&& func)
+    promise<Result> then(Func&& func) const
     {
       using task = internal::then_task<Result, T, Func>;
       return promise<Result>{std::make_shared<task>(m_task, std::forward<Func>(func))};
@@ -897,7 +897,7 @@ class promise
      * @return Promise object.
      */
     template<typename Func, typename Result = typename std::result_of<Func()>::type>
-    promise<Result> then(Func&& func)
+    promise<Result> then(Func&& func) const
     {
       using task = internal::then_task_void<Result, T, Func>;
       return promise<Result>{std::make_shared<task>(m_task, std::forward<Func>(func))};
@@ -913,7 +913,7 @@ class promise
     template<typename Func, typename Arg = std::exception_ptr,
              typename Result = typename std::result_of<Func(Arg)>::type,
              typename = typename std::enable_if<std::is_same<Result, T>::value>::type>
-    promise<Result> fail(Func&& func)
+    promise<Result> fail(Func&& func) const
     {
       using task = internal::fail_task<Result, T, Func>;
       return promise<Result>{std::make_shared<task>(m_task, std::forward<Func>(func))};
@@ -928,7 +928,7 @@ class promise
      */
     template<typename Func, typename Result = typename std::result_of<Func()>::type,
              typename = typename std::enable_if<std::is_same<Result, T>::value>::type>
-    promise<Result> fail(Func&& func)
+    promise<Result> fail(Func&& func) const
     {
       using task = internal::fail_task_void<Result, T, Func>;
       return promise<Result>{std::make_shared<task>(m_task, std::forward<Func>(func))};
@@ -941,13 +941,12 @@ class promise
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container,
-             typename Func, typename Allocator, typename Arg = T,
-             typename FuncResult = typename std::result_of<Func(Arg)>::type,
+    template<template<typename, typename> class Container, typename Func, typename Allocator,
+             typename Arg = T, typename FuncResult = typename std::result_of<Func(Arg)>::type,
              typename Result = Container<FuncResult, std::allocator<FuncResult>>,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
-    promise<Result> all(Container<Func, Allocator> funcs)
+    promise<Result> all(Container<Func, Allocator> funcs) const
     {
       using task = internal::all_task<Result, T, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
@@ -964,7 +963,7 @@ class promise
              typename FuncResult = typename std::result_of<Func()>::type,
              typename Result = Container<FuncResult, std::allocator<FuncResult>>,
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
-    promise<Result> all(Container<Func, Allocator> funcs)
+    promise<Result> all(Container<Func, Allocator> funcs) const
     {
       using task = internal::all_task_void<Result, T, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
@@ -977,12 +976,11 @@ class promise
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container,
-             typename Func, typename Allocator, typename Arg = T,
-             typename FuncResult = typename std::result_of<Func(Arg)>::type,
+    template<template<typename, typename> class Container, typename Func, typename Allocator,
+             typename Arg = T, typename FuncResult = typename std::result_of<Func(Arg)>::type,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
              typename = typename std::enable_if<std::is_void<FuncResult>::value>::type>
-    promise<void> all(Container<Func, Allocator> funcs)
+    promise<void> all(Container<Func, Allocator> funcs) const
     {
       using task = internal::all_task<void, T, Container, Func, Allocator>;
       return promise<void>{std::make_shared<task>(m_task, std::move(funcs))};
@@ -998,7 +996,7 @@ class promise
     template<template<typename, typename> class Container, typename Func, typename Allocator,
              typename FuncResult = typename std::result_of<Func()>::type,
              typename = typename std::enable_if<std::is_void<FuncResult>::value>::type>
-    promise<void> all(Container<Func, Allocator> funcs)
+    promise<void> all(Container<Func, Allocator> funcs) const
     {
       using task = internal::all_task_void<void, T, Container, Func, Allocator>;
       return promise<void>{std::make_shared<task>(m_task, std::move(funcs))};
@@ -1010,11 +1008,10 @@ class promise
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container,
-             typename Func, typename Allocator, typename Arg = T,
-             typename Result = typename std::result_of<Func(Arg)>::type,
+    template<template<typename, typename> class Container, typename Func, typename Allocator,
+             typename Arg = T, typename Result = typename std::result_of<Func(Arg)>::type,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type>
-    promise<Result> any(Container<Func, Allocator> funcs)
+    promise<Result> any(Container<Func, Allocator> funcs) const
     {
       using task = internal::any_task<Result, T, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
@@ -1028,7 +1025,7 @@ class promise
      */
     template<template<typename, typename> class Container, typename Func, typename Allocator,
              typename Result = typename std::result_of<Func()>::type>
-    promise<Result> any(Container<Func, Allocator> funcs)
+    promise<Result> any(Container<Func, Allocator> funcs) const
     {
       using task = internal::any_task_void<Result, T, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
@@ -1041,11 +1038,10 @@ class promise
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container,
-             typename Func, typename Allocator, typename Arg = T,
-             typename Result = typename std::result_of<Func(Arg)>::type,
+    template<template<typename, typename> class Container, typename Func, typename Allocator,
+             typename Arg = T, typename Result = typename std::result_of<Func(Arg)>::type,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type>
-    promise<Result> race(Container<Func, Allocator> funcs)
+    promise<Result> race(Container<Func, Allocator> funcs) const
     {
       using task = internal::race_task<Result, T, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
@@ -1060,7 +1056,7 @@ class promise
      */
     template<template<typename, typename> class Container, typename Func, typename Allocator,
              typename Result = typename std::result_of<Func()>::type>
-    promise<Result> race(Container<Func, Allocator> funcs)
+    promise<Result> race(Container<Func, Allocator> funcs) const
     {
       using task = internal::race_task_void<Result, T, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
