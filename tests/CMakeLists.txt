@@ -39,8 +39,8 @@ set(HEADERS
 )
 
 set(SOURCES
-  src/all.cpp
   src/all_settled.cpp
+  src/all.cpp
   src/any.cpp
   src/fail.cpp
   src/finally.cpp
@@ -49,6 +49,10 @@ set(SOURCES
   src/race.cpp
   src/reject.cpp
   src/resolve.cpp
+  src/static_all_settled.cpp
+  src/static_all.cpp
+  src/static_any.cpp
+  src/static_race.cpp
   src/then.cpp
 )
 

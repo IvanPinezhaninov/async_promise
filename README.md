@@ -16,12 +16,6 @@ The constructor for creating an `async::promise` object takes a function with op
 auto promise = async::promise<int>{[] (int a, int b) { return a + b; }, 2, 2};
 ```
 
-If the starting value is known in advance and a function for calculating it is not required, then you can use the static `resolve` method
-
-```cpp
-auto promise = async::promise<int>::resolve(2);
-```
-
 To start the execution of a chain of function calls, use the `run` method, which returns `std::future`
 
 ```cpp
@@ -185,6 +179,8 @@ auto future2 = async::promise<void>::reject(std::runtime_error{"I'm an error"})
 std::cout << future1.get() << std::endl; // prints "Hello World!"
 std::cout << future2.get() << std::endl; // prints "Hello World!"
 ```
+
+A set of static methods `resolve`, `reject`, `all`, `all_settled`, `any`, `race` are also available in the special class `static_promise`
 
 ## Build and test
 

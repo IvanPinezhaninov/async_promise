@@ -25,7 +25,7 @@
 static constexpr auto str = "Hello World!";
 
 
-TEST_CASE("All settled void void", "[all_settled]")
+TEST_CASE("Static all settled void void", "[static all_setled]")
 {
   std::vector<void(*)()> funcs
   {
@@ -33,7 +33,7 @@ TEST_CASE("All settled void void", "[all_settled]")
     [] () {},
   };
 
-  auto future = async::static_promise<void>::resolve().all_settled(funcs).run();
+  auto future = async::static_promise<std::vector<async::settled<void>>>::all_settled(funcs).run();
 
   std::vector<async::settled<void>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -44,7 +44,7 @@ TEST_CASE("All settled void void", "[all_settled]")
 }
 
 
-TEST_CASE("All settled error void void", "[all_settled]")
+TEST_CASE("Static all settled error void void", "[static all_setled]")
 {
   std::vector<void(*)()> funcs
   {
@@ -52,7 +52,7 @@ TEST_CASE("All settled error void void", "[all_settled]")
     [] () { throw std::runtime_error{str}; },
   };
 
-  auto future = async::static_promise<void>::resolve().all_settled(funcs).run();
+  auto future = async::static_promise<std::vector<async::settled<void>>>::all_settled(funcs).run();
 
   std::vector<async::settled<void>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -64,7 +64,7 @@ TEST_CASE("All settled error void void", "[all_settled]")
 }
 
 
-TEST_CASE("All settled void string", "[all_settled]")
+TEST_CASE("Static all settled void string", "[static all_setled]")
 {
   std::vector<void(*)(std::string)> funcs
   {
@@ -72,7 +72,7 @@ TEST_CASE("All settled void string", "[all_settled]")
     [] (std::string) {},
   };
 
-  auto future = async::static_promise<std::string>::resolve(str).all_settled(funcs).run();
+  auto future = async::static_promise<std::vector<async::settled<void>>>::all_settled(funcs, str).run();
 
   std::vector<async::settled<void>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -83,7 +83,7 @@ TEST_CASE("All settled void string", "[all_settled]")
 }
 
 
-TEST_CASE("All settled error void string", "[all_settled]")
+TEST_CASE("Static all settled error void string", "[static all_setled]")
 {
   std::vector<void(*)(std::string)> funcs
   {
@@ -91,7 +91,7 @@ TEST_CASE("All settled error void string", "[all_settled]")
     [] (std::string) { throw std::runtime_error{str}; },
   };
 
-  auto future = async::static_promise<std::string>::resolve(str).all_settled(funcs).run();
+  auto future = async::static_promise<std::vector<async::settled<void>>>::all_settled(funcs, str).run();
 
   std::vector<async::settled<void>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -103,7 +103,7 @@ TEST_CASE("All settled error void string", "[all_settled]")
 }
 
 
-TEST_CASE("All settled string void", "[all_settled]")
+TEST_CASE("Static all settled string void", "[static all_setled]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -111,7 +111,7 @@ TEST_CASE("All settled string void", "[all_settled]")
     [] () { return std::string{str}; },
   };
 
-  auto future = async::static_promise<void>::resolve().all_settled(funcs).run();
+  auto future = async::static_promise<std::vector<async::settled<std::string>>>::all_settled(funcs).run();
 
   std::vector<async::settled<std::string>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -124,7 +124,7 @@ TEST_CASE("All settled string void", "[all_settled]")
 }
 
 
-TEST_CASE("All settled error string void", "[all_settled]")
+TEST_CASE("Static all settled error string void", "[static all_setled]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -132,7 +132,7 @@ TEST_CASE("All settled error string void", "[all_settled]")
     [] () -> std::string { throw std::runtime_error{str}; },
   };
 
-  auto future = async::static_promise<void>::resolve().all_settled(funcs).run();
+  auto future = async::static_promise<std::vector<async::settled<std::string>>>::all_settled(funcs).run();
 
   std::vector<async::settled<std::string>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -146,7 +146,7 @@ TEST_CASE("All settled error string void", "[all_settled]")
 }
 
 
-TEST_CASE("All settled string string", "[all_settled]")
+TEST_CASE("Static all settled string string", "[static all_setled]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
@@ -154,7 +154,7 @@ TEST_CASE("All settled string string", "[all_settled]")
     [] (std::string str) { return str; },
   };
 
-  auto future = async::static_promise<std::string>::resolve(str).all_settled(funcs).run();
+  auto future = async::static_promise<std::vector<async::settled<std::string>>>::all_settled(funcs, str).run();
 
   std::vector<async::settled<std::string>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -167,7 +167,7 @@ TEST_CASE("All settled string string", "[all_settled]")
 }
 
 
-TEST_CASE("All settled error string string", "[all_settled]")
+TEST_CASE("Static all settled error string string", "[static all_setled]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
@@ -175,7 +175,7 @@ TEST_CASE("All settled error string string", "[all_settled]")
     [] (std::string str) -> std::string { throw std::runtime_error{str}; },
   };
 
-  auto future = async::static_promise<std::string>::resolve(str).all_settled(funcs).run();
+  auto future = async::static_promise<std::vector<async::settled<std::string>>>::all_settled(funcs, str).run();
 
   std::vector<async::settled<std::string>> res;
   REQUIRE_NOTHROW(res = future.get());

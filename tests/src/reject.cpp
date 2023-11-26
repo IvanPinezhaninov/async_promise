@@ -27,7 +27,7 @@ static constexpr auto str = "Hello World!";
 
 TEST_CASE("Reject", "[reject]")
 {
-  auto future = async::promise<void>::reject(std::runtime_error{str}).run();
+  auto future = async::static_promise<void>::reject(std::runtime_error{str}).run();
 
   REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }

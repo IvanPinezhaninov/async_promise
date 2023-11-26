@@ -29,7 +29,7 @@ static constexpr auto str = "Hello World!";
 
 TEST_CASE("Finally resolve void void", "[finally]")
 {
-  auto future = async::promise<void>::resolve().finally(void_void).run();
+  auto future = async::static_promise<void>::resolve().finally(void_void).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -37,7 +37,7 @@ TEST_CASE("Finally resolve void void", "[finally]")
 
 TEST_CASE("Finally resolve string void", "[finally]")
 {
-  auto future = async::promise<std::string>::resolve(str).finally(string_void).run();
+  auto future = async::static_promise<std::string>::resolve(str).finally(string_void).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -47,7 +47,7 @@ TEST_CASE("Finally resolve string void", "[finally]")
 
 TEST_CASE("Finally reject void void", "[finally]")
 {
-  auto future = async::promise<void>::reject(std::runtime_error{str}).finally(void_void).run();
+  auto future = async::static_promise<void>::reject(std::runtime_error{str}).finally(void_void).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -55,7 +55,7 @@ TEST_CASE("Finally reject void void", "[finally]")
 
 TEST_CASE("Finally reject string void", "[finally]")
 {
-  auto future = async::promise<void>::reject(std::runtime_error{str}).finally(string_void).run();
+  auto future = async::static_promise<void>::reject(std::runtime_error{str}).finally(string_void).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());

@@ -26,7 +26,7 @@ static constexpr auto str = "Hello World!";
 
 TEST_CASE("Resolve void", "[resolve]")
 {
-  auto future = async::promise<void>::resolve().run();
+  auto future = async::static_promise<void>::resolve().run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -34,7 +34,7 @@ TEST_CASE("Resolve void", "[resolve]")
 
 TEST_CASE("Resolve string", "[resolve]")
 {
-  auto future = async::promise<std::string>::resolve(str).run();
+  auto future = async::static_promise<std::string>::resolve(str).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());

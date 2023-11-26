@@ -29,7 +29,7 @@
 static constexpr auto str = "Hello World!";
 
 
-TEST_CASE("Race void void", "[race]")
+TEST_CASE("Static race void void", "[static race]")
 {
   std::vector<void(*)()> void_void
   {
@@ -37,13 +37,13 @@ TEST_CASE("Race void void", "[race]")
     [] () {},
   };
 
-  auto future = async::static_promise<void>::resolve().race(void_void).run();
+  auto future = async::static_promise<void>::race(void_void).run();
 
   REQUIRE_NOTHROW(future.get());
 }
 
 
-TEST_CASE("Race error won void void", "[race]")
+TEST_CASE("Static race error won void void", "[static race]")
 {
   std::vector<void(*)()> void_void
   {
@@ -51,13 +51,13 @@ TEST_CASE("Race error won void void", "[race]")
     [] () { std::this_thread::sleep_for(std::chrono::milliseconds(100)); },
   };
 
-  auto future = async::static_promise<void>::resolve().race(void_void).run();
+  auto future = async::static_promise<void>::race(void_void).run();
 
   REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }
 
 
-TEST_CASE("Race error lose void void", "[race]")
+TEST_CASE("Static race error lose void void", "[static race]")
 {
   std::vector<void(*)()> void_void
   {
@@ -65,13 +65,13 @@ TEST_CASE("Race error lose void void", "[race]")
     [] () { std::this_thread::sleep_for(std::chrono::milliseconds(100)); throw std::runtime_error{str}; },
   };
 
-  auto future = async::static_promise<void>::resolve().race(void_void).run();
+  auto future = async::static_promise<void>::race(void_void).run();
 
   REQUIRE_NOTHROW(future.get());
 }
 
 
-TEST_CASE("Race void string", "[race]")
+TEST_CASE("Static race void string", "[static race]")
 {
   std::vector<void(*)(std::string)> void_str
   {
@@ -79,13 +79,13 @@ TEST_CASE("Race void string", "[race]")
     [] (std::string) {},
   };
 
-  auto future = async::static_promise<std::string>::resolve(str).race(void_str).run();
+  auto future = async::static_promise<void>::race(void_str, str).run();
 
   REQUIRE_NOTHROW(future.get());
 }
 
 
-TEST_CASE("Race error won void string", "[race]")
+TEST_CASE("Static race error won void string", "[static race]")
 {
   std::vector<void(*)(std::string)> void_str
   {
@@ -93,13 +93,13 @@ TEST_CASE("Race error won void string", "[race]")
     [] (std::string) { std::this_thread::sleep_for(std::chrono::milliseconds(100)); },
   };
 
-  auto future = async::static_promise<std::string>::resolve(str).race(void_str).run();
+  auto future = async::static_promise<void>::race(void_str, str).run();
 
   REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
 }
 
 
-TEST_CASE("Race error lose void string", "[race]")
+TEST_CASE("Static race error lose void string", "[static race]")
 {
   std::vector<void(*)(std::string)> void_str
   {
@@ -107,13 +107,13 @@ TEST_CASE("Race error lose void string", "[race]")
     [] (std::string) { std::this_thread::sleep_for(std::chrono::milliseconds(100)); throw std::runtime_error{str}; },
   };
 
-  auto future = async::static_promise<std::string>::resolve(str).race(void_str).run();
+  auto future = async::static_promise<void>::race(void_str, str).run();
 
   REQUIRE_NOTHROW(future.get());
 }
 
 
-TEST_CASE("Race string void", "[race]")
+TEST_CASE("Static race string void", "[static race]")
 {
   std::vector<std::string(*)()> str_void
   {
@@ -121,7 +121,7 @@ TEST_CASE("Race string void", "[race]")
     [] () { return std::string{str}; },
   };
 
-  auto future = async::static_promise<void>::resolve().race(str_void).run();
+  auto future = async::static_promise<std::string>::race(str_void).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -129,7 +129,7 @@ TEST_CASE("Race string void", "[race]")
 }
 
 
-TEST_CASE("Race error won string void", "[race]")
+TEST_CASE("Static race error won string void", "[static race]")
 {
   std::vector<std::string(*)()> str_void
   {
@@ -137,7 +137,7 @@ TEST_CASE("Race error won string void", "[race]")
     [] () { std::this_thread::sleep_for(std::chrono::milliseconds(100)); return std::string{str}; },
   };
 
-  auto future = async::static_promise<void>::resolve().race(str_void).run();
+  auto future = async::static_promise<std::string>::race(str_void).run();
 
   std::string res;
   REQUIRE_THROWS_MATCHES(res = future.get(), std::runtime_error, Catch::Matchers::Message(str));
@@ -145,7 +145,7 @@ TEST_CASE("Race error won string void", "[race]")
 }
 
 
-TEST_CASE("Race error lose string void", "[race]")
+TEST_CASE("Static race error lose string void", "[static race]")
 {
   std::vector<std::string(*)()> str_void
   {
@@ -153,7 +153,7 @@ TEST_CASE("Race error lose string void", "[race]")
     [] () -> std::string { std::this_thread::sleep_for(std::chrono::milliseconds(100)); throw std::runtime_error{str}; },
   };
 
-  auto future = async::static_promise<void>::resolve().race(str_void).run();
+  auto future = async::static_promise<std::string>::race(str_void).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -161,7 +161,7 @@ TEST_CASE("Race error lose string void", "[race]")
 }
 
 
-TEST_CASE("Race string string", "[race]")
+TEST_CASE("Static race string string", "[static race]")
 {
   std::vector<std::string(*)(std::string)> str_str
   {
@@ -169,7 +169,7 @@ TEST_CASE("Race string string", "[race]")
     [] (std::string str) { return str; },
   };
 
-  auto future = async::static_promise<std::string>::resolve(str).race(str_str).run();
+  auto future = async::static_promise<std::string>::race(str_str, str).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -177,7 +177,7 @@ TEST_CASE("Race string string", "[race]")
 }
 
 
-TEST_CASE("Race error won string string", "[race]")
+TEST_CASE("Static race error won string string", "[static race]")
 {
   std::vector<std::string(*)(std::string)> str_str
   {
@@ -185,7 +185,7 @@ TEST_CASE("Race error won string string", "[race]")
     [] (std::string str) { std::this_thread::sleep_for(std::chrono::milliseconds(100)); return str; },
   };
 
-  auto future = async::static_promise<std::string>::resolve(str).race(str_str).run();
+  auto future = async::static_promise<std::string>::race(str_str, str).run();
 
   std::string res;
   REQUIRE_THROWS_MATCHES(res = future.get(), std::runtime_error, Catch::Matchers::Message(str));
@@ -193,7 +193,7 @@ TEST_CASE("Race error won string string", "[race]")
 }
 
 
-TEST_CASE("Race error lose string string", "[race]")
+TEST_CASE("Static race error lose string string", "[static race]")
 {
   std::vector<std::string(*)(std::string)> str_str
   {
@@ -201,7 +201,7 @@ TEST_CASE("Race error lose string string", "[race]")
     [] (std::string str) -> std::string { std::this_thread::sleep_for(std::chrono::milliseconds(100)); throw std::runtime_error{str}; },
   };
 
-  auto future = async::static_promise<std::string>::resolve(str).race(str_str).run();
+  auto future = async::static_promise<std::string>::race(str_str, str).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
