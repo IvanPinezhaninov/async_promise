@@ -54,9 +54,13 @@ std::vector<int(*)(int)> funcs
   [] (int x) { return x * 4; },
 };
 
-auto p = async::promise<int>{[] { return 2; }}
-         .all(funcs)
-         .run();
+auto future = async::promise<int>{[] { return 2; }}
+              .all(funcs)
+              .run();
+
+auto results = future.get();
+for (const auto& result : results)
+  std::cout << result << std::endl;
 ```
 
 The `all_settled` method accepts an iterable of functions. Each function asynchronously processes the return value of the previous function. When all functions have completed, the method will return an iterable with a special settled object that contains either a result or an error of functions in the same order as the functions in the incoming iterable.
@@ -65,12 +69,30 @@ The `all_settled` method accepts an iterable of functions. Each function asynchr
 std::vector<int(*)(int)> funcs
 {
   [] (int x) { return x * 2; },
-  [] (int x) { return x * 4; },
+  [] (int x) -> int { throw std::runtime_error{"I'm an error'"}; },
 };
 
-auto p = async::promise<int>{[] { return 2; }}
-         .all_settled(funcs)
-         .run();
+auto future = async::promise<int>{[] { return 2; }}
+              .all_settled(funcs)
+              .run();
+
+auto results = future.get();
+for (const auto& result : results)
+{
+  switch (result.type)
+  {
+    case async::settle_type::resolved:
+      std::cout << "resolved: " << result.result << std::endl;
+      break;
+    case async::settle_type::rejected:
+      try {
+        std::rethrow_exception(result.error);
+      } catch (const std::exception& e) {
+        std::cout << "rejected: " << e.what() << std::endl;
+      }
+      break;
+  }
+}
 ```
 
 The `any` method accepts an iterable of functions. Each function asynchronously processes the return value of the previous function. The result of the method will be the result of the first function that completes successfully. If all functions fail, an `async::aggregate_error` exception will be thrown
@@ -78,13 +100,15 @@ The `any` method accepts an iterable of functions. Each function asynchronously 
 ```cpp
 std::vector<int(*)(int)> funcs
 {
+  [] (int x) -> int { throw std::runtime_error{"I'm an error'"}; },
   [] (int x) { return x * 2; },
-  [] (int x) { return x * 4; },
 };
 
-auto p = async::promise<int>{[] { return 2; }}
-         .any(funcs)
-         .run();
+auto future = async::promise<int>{[] { return 2; }}
+              .any(funcs)
+              .run();
+
+std::cout << future.get() << std::endl; // prints 4
 ```
 
 The `race` method accepts an iterable of functions. Each function asynchronously processes the return value of the previous function. The result of the method will be the result or error of the first completed function
@@ -92,13 +116,19 @@ The `race` method accepts an iterable of functions. Each function asynchronously
 ```cpp
 std::vector<int(*)(int)> funcs
 {
+  [] (int x) -> int { throw std::runtime_error{"I'm an error'"}; },
   [] (int x) { return x * 2; },
-  [] (int x) { return x * 4; },
 };
 
-auto p = async::promise<int>{[] { return 2; }}
-         .race(funcs)
-         .run();
+auto future = async::promise<int>{[] { return 2; }}
+              .race(funcs)
+              .run();
+
+try {
+  std::cout << future.get() << std::endl;
+} catch (const std::exception& e) {
+  std::cout << e.what() << std::endl;
+}
 ```
 
 In the `all`, `all_settled`, `any` and `race` methods it is allowed to use iterable with functions without an argument if it is not necessary to process the value returned by the previous function
@@ -110,9 +140,13 @@ std::vector<int(*)()> funcs
   [] () { return 2; },
 };
 
-auto p = async::promise<int>{[] { return 2; }}
-         .all(funcs)
-         .run();
+auto future = async::promise<int>{[] { return 2; }}
+              .all(funcs)
+              .run();
+
+auto results = future.get();
+for (const auto& result : results)
+  std::cout << result << std::endl;
 ```
 
 Catching exceptions thrown in previously called functions is done by adding a `fail` method to the chain, which takes as an argument a function whose argument is of type `std::exception_ptr` and returns a value of the same type as the previously called function. If the previous functions were executed without errors, then the method is free to pass through itself the value calculated by the previous function. If an exception was thrown in one of the previous functions, it can be handled using the function passed to the `fail` method
@@ -169,11 +203,11 @@ std::cout << future.get() << std::endl; // prints -1
 To add the next function to a chain that will be called on both resolved and rejected, the `finally` method can be used
 
 ```cpp
-auto future1 = async::promise<void>::resolve()
+auto future1 = async::static_promise<void>::resolve()
                .finally([] { return "Hello World!"; })
                .run();
 
-auto future2 = async::promise<void>::reject(std::runtime_error{"I'm an error"})
+auto future2 = async::static_promise<void>::reject(std::runtime_error{"I'm an error"})
                .finally([] { return "Hello World!"; })
                .run();
 
