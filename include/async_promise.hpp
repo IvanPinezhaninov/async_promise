@@ -295,53 +295,6 @@ class promise_helper
 };
 
 
-template<typename Result>
-class resolve_task final : public task<Result>
-{
-  public:
-    template<typename T>
-    explicit resolve_task(T&& val)
-      : m_val{std::forward<T>(val)}
-    {}
-
-    Result run() final
-    {
-      return m_val;
-    }
-
-  private:
-    Result m_val;
-};
-
-
-template<>
-class resolve_task<void> final : public task<void>
-{
-  public:
-    void run() final
-    {}
-};
-
-
-template<typename Result, typename Error>
-class reject_task final : public task<Result>
-{
-  public:
-    template<typename T>
-    explicit reject_task(T&& error)
-      : m_error{std::forward<T>(error)}
-    {}
-
-    Result run() final
-    {
-      std::rethrow_exception(std::make_exception_ptr(std::move(m_error)));
-    }
-
-  private:
-    Error m_error;
-};
-
-
 template<typename Result, typename Func, typename... Args>
 class initial_task final : public task<Result>
 {
@@ -1566,6 +1519,53 @@ class race_task_static<void, Container, Func, Allocator, Args...> final
     }
 
     std::tuple<Args...> m_args;
+};
+
+
+template<typename Result>
+class resolve_task final : public task<Result>
+{
+  public:
+    template<typename T>
+    explicit resolve_task(T&& val)
+      : m_val{std::forward<T>(val)}
+    {}
+
+    Result run() final
+    {
+      return m_val;
+    }
+
+  private:
+    Result m_val;
+};
+
+
+template<>
+class resolve_task<void> final : public task<void>
+{
+  public:
+    void run() final
+    {}
+};
+
+
+template<typename Result, typename Error>
+class reject_task final : public task<Result>
+{
+  public:
+    template<typename T>
+    explicit reject_task(T&& error)
+      : m_error{std::forward<T>(error)}
+    {}
+
+    Result run() final
+    {
+      std::rethrow_exception(std::make_exception_ptr(std::move(m_error)));
+    }
+
+  private:
+    Error m_error;
 };
 
 } // namespace internal
