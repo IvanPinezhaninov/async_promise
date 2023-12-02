@@ -215,7 +215,7 @@ std::cout << future1.get() << std::endl; // prints "Hello World!"
 std::cout << future2.get() << std::endl; // prints "Hello World!"
 ```
 
-A set of static methods `resolve`, `reject`, `all`, `all_settled`, `any`, `race` are also available in the special class `static_promise`
+A set of static methods `resolve`, `reject`, `all`, `all_settled`, `any`, `race` are available in the special class `async::static_promise`
 
 ## Build and test
 
