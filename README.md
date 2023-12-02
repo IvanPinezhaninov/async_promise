@@ -1,5 +1,6 @@
 # async::promise
 
+![Build and test](https://github.com/IvanPinezhaninov/async_promise/actions/workflows/build-and-test.yml/badge.svg)
 [![MIT License](https://img.shields.io/badge/license-mit-blue.svg?style=flat)](http://opensource.org/licenses/MIT)
 
 ## Overview
