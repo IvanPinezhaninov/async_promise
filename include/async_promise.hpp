@@ -1907,6 +1907,12 @@ template<typename T>
 class static_promise
 {
   public:
+    static_promise(const static_promise&) = default;
+    static_promise(static_promise&&) = default;
+    static_promise& operator=(const static_promise&) = default;
+    static_promise& operator=(static_promise&&) = default;
+    virtual ~static_promise() = default;
+
     /**
      * @brief Add an iterable of functions to be called.
      *        Return an iterable of results or first rejection reason.
