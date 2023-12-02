@@ -1709,7 +1709,7 @@ class promise
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
     promise<Result> all(Container<Func, Allocator> funcs) const
     {
-      using task = internal::all_task_void<Result, void, Container, Func, Allocator>;
+      using task = internal::all_task_void<Result, T, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -1778,7 +1778,7 @@ class promise
              typename = typename std::true_type::type>
     promise<Result> all_settled(Container<Func, Allocator> funcs) const
     {
-      using task = internal::all_settled_task_void<Result, void, void, Container, Func, Allocator>;
+      using task = internal::all_settled_task_void<Result, T, void, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -1814,7 +1814,7 @@ class promise
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
     promise<Result> all_settled(Container<Func, Allocator> funcs) const
     {
-      using task = internal::all_settled_task_void<Result, void, FuncResult, Container, Func, Allocator>;
+      using task = internal::all_settled_task_void<Result, T, FuncResult, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -1845,7 +1845,7 @@ class promise
              typename Result = typename std::result_of<Func()>::type>
     promise<Result> any(Container<Func, Allocator> funcs) const
     {
-      using task = internal::any_task_void<Result, void, Container, Func, Allocator>;
+      using task = internal::any_task_void<Result, T, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -1876,7 +1876,7 @@ class promise
              typename Result = typename std::result_of<Func()>::type>
     promise<Result> race(Container<Func, Allocator> funcs) const
     {
-      using task = internal::race_task_void<Result, void, Container, Func, Allocator>;
+      using task = internal::race_task_void<Result, T, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 

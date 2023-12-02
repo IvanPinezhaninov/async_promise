@@ -124,6 +124,27 @@ TEST_CASE("All settled string void", "[all_settled]")
 }
 
 
+TEST_CASE("All settled string void ignore arg", "[all_settled]")
+{
+  std::vector<std::string(*)()> funcs
+  {
+    [] () { return std::string{str}; },
+    [] () { return std::string{str}; },
+  };
+
+  auto future = async::static_promise<std::string>::resolve(str).all_settled(funcs).run();
+
+  std::vector<async::settled<std::string>> res;
+  REQUIRE_NOTHROW(res = future.get());
+
+  REQUIRE(res.size() == funcs.size());
+  REQUIRE(res.front().type == async::settle_type::resolved);
+  REQUIRE(res.front().result == str);
+  REQUIRE(res.back().type == async::settle_type::resolved);
+  REQUIRE(res.back().result == str);
+}
+
+
 TEST_CASE("All settled error string void", "[all_settled]")
 {
   std::vector<std::string(*)()> funcs

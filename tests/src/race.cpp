@@ -129,6 +129,22 @@ TEST_CASE("Race string void", "[race]")
 }
 
 
+TEST_CASE("Race string void ignore arg", "[race]")
+{
+  std::vector<std::string(*)()> str_void
+  {
+    [] () { return std::string{str}; },
+    [] () { return std::string{str}; },
+  };
+
+  auto future = async::static_promise<std::string>::resolve(str).race(str_void).run();
+
+  std::string res;
+  REQUIRE_NOTHROW(res = future.get());
+  REQUIRE(res == str);
+}
+
+
 TEST_CASE("Race error won string void", "[race]")
 {
   std::vector<std::string(*)()> str_void

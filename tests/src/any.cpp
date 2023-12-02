@@ -126,6 +126,22 @@ TEST_CASE("Any string void", "[any]")
 }
 
 
+TEST_CASE("Any string void ignore arg", "[any]")
+{
+  std::vector<std::string(*)()> funcs
+  {
+    [] () { return std::string{str}; },
+    [] () { return std::string{str}; },
+  };
+
+  auto future = async::static_promise<std::string>::resolve(str).any(funcs).run();
+
+  std::string res;
+  REQUIRE_NOTHROW(res = future.get());
+  REQUIRE(res == str);
+}
+
+
 TEST_CASE("Any error string void", "[any]")
 {
   std::vector<std::string(*)()> funcs

@@ -47,12 +47,12 @@ set(SOURCES
   src/funcs.cpp
   src/initial.cpp
   src/race.cpp
-  src/reject.cpp
-  src/resolve.cpp
   src/static_all_settled.cpp
   src/static_all.cpp
   src/static_any.cpp
   src/static_race.cpp
+  src/static_reject.cpp
+  src/static_resolve.cpp
   src/then.cpp
 )
 
