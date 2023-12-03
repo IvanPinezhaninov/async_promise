@@ -1,6 +1,7 @@
 # async::promise
 
-![Build and test](https://github.com/IvanPinezhaninov/async_promise/actions/workflows/build-and-test.yml/badge.svg)
+[![build and test](https://github.com/IvanPinezhaninov/async_promise/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/IvanPinezhaninov/async_promise/actions/workflows/build-and-test.yml)
+[![codecov](https://codecov.io/gh/IvanPinezhaninov/async_promise/graph/badge.svg?token=QY6RFP37G1)](https://codecov.io/gh/IvanPinezhaninov/async_promise)
 [![MIT License](https://img.shields.io/badge/license-mit-blue.svg?style=flat)](http://opensource.org/licenses/MIT)
 
 ## Overview

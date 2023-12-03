@@ -1,6 +1,6 @@
 name: build and test
 
-on: [push]
+on: push
 
 jobs:
   build:
@@ -62,6 +62,7 @@ jobs:
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DASYNC_PROMISE_BUILD_TESTS=ON
+        -DASYNC_PROMISE_CODECOV=ON
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
@@ -76,3 +77,17 @@ jobs:
       # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest --build-config ${{ matrix.build_type }}
+
+    - name: Prepare coverage reports
+      if: ${{ success() && 'ubuntu-latest' == matrix.os && 'g++' == matrix.cpp_compiler }}
+      run: |
+        sudo apt update && sudo apt install -y lcov
+        cd ${{ steps.strings.outputs.build-output-dir }}
+        lcov --capture --directory . --output-file coverage.info
+        lcov --remove coverage.info "/usr/*" "*/tests/src/*" "*/catch2/*" --output-file coverage.info
+
+    - name: Upload coverage reports to Codecov
+      if: ${{ success() && 'ubuntu-latest' == matrix.os && 'g++' == matrix.cpp_compiler }}
+      uses: codecov/codecov-action@v3
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

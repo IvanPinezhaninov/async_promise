@@ -21,12 +21,13 @@ project(async_promise LANGUAGES CXX VERSION 1.0.0)
 
 option(ASYNC_PROMISE_BUILD_EXAMPLE "Build example" OFF)
 option(ASYNC_PROMISE_BUILD_TESTS "Build tests" OFF)
+option(ASYNC_PROMISE_CODECOV "Add test coverage" OFF)
 
 if(ASYNC_PROMISE_BUILD_EXAMPLE)
   add_subdirectory(example)
 endif()
 
-if (ASYNC_PROMISE_BUILD_TESTS)
+if(ASYNC_PROMISE_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
@@ -50,5 +51,14 @@ target_include_directories(${TARGET} INTERFACE
 target_link_libraries(${TARGET} INTERFACE
   Threads::Threads
 )
+
+if(ASYNC_PROMISE_CODECOV AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  target_compile_options(${TARGET} INTERFACE -O0 -g --coverage)
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
+    target_link_options(${TARGET} INTERFACE --coverage)
+  else()
+    target_link_libraries(${TARGET} INTERFACE --coverage)
+  endif()
+endif()
 
 install(FILES ${HEADERS} DESTINATION include)
