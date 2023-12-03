@@ -23,6 +23,7 @@
 #include <functional>
 #include <future>
 #include <memory>
+#include <tuple>
 #include <vector>
 
 
@@ -181,6 +182,8 @@ struct settled<void> final
 namespace internal
 {
 
+#if __cplusplus < 201703L
+
 template<std::size_t... indexes>
 struct index_sequence
 {
@@ -225,6 +228,10 @@ auto apply(Func&& func, Tuple&& tuple) -> decltype(apply(std::forward<Func>(func
 {
   return apply(std::forward<Func>(func), std::forward<Tuple>(tuple), Seq{});
 }
+
+#else
+using std::apply;
+#endif
 
 
 template<typename Result>
