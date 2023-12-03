@@ -793,26 +793,12 @@ class all_settled_task_void<Result, ParentResult, void, Container, Func, Allocat
 
 template<typename Result, typename ParentResult,
          template<typename, typename> class Container, typename Func, typename Allocator>
-class next_functions_task : public next_task<Result, ParentResult>, public promise_helper<Result>
-{
-  public:
-    next_functions_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : next_task<Result, ParentResult>{std::move(parent)}
-      , m_funcs{std::move(funcs)}
-    {}
-
-  protected:
-    Container<Func, Allocator> m_funcs;
-};
-
-
-template<typename Result, typename ParentResult,
-         template<typename, typename> class Container, typename Func, typename Allocator>
-class any_task_base : public next_functions_task<Result, ParentResult, Container, Func, Allocator>
+class any_task_base : public next_task<Result, ParentResult>, public promise_helper<Result>
 {
   public:
     any_task_base(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : next_functions_task<Result, ParentResult, Container, Func, Allocator>{std::move(parent), std::move(funcs)}
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_funcs{std::move(funcs)}
     {}
 
     Result run() final
@@ -842,9 +828,11 @@ class any_task_base : public next_functions_task<Result, ParentResult, Container
       if (m_errors.size() < this->m_funcs.size())
         return;
 
-      next_functions_task<Result, ParentResult, Container, Func, Allocator>
-          ::reject(std::make_exception_ptr(aggregate_error{std::move(m_errors)}));
+      promise_helper<Result>::reject(std::make_exception_ptr(aggregate_error{std::move(m_errors)}));
     }
+
+  protected:
+    Container<Func, Allocator> m_funcs;
 
   private:
     virtual void async_run(std::vector<std::future<void>>& futures) = 0;
@@ -986,11 +974,12 @@ class any_task_void<void, ParentResult, Container, Func, Allocator> final
 
 template<typename Result, typename ParentResult,
          template<typename, typename> class Container, typename Func, typename Allocator>
-class race_task_base : public next_functions_task<Result, ParentResult, Container, Func, Allocator>
+class race_task_base : public next_task<Result, ParentResult>, public promise_helper<Result>
 {
   public:
     race_task_base(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : next_functions_task<Result, ParentResult, Container, Func, Allocator>{std::move(parent), std::move(funcs)}
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_funcs{std::move(funcs)}
     {}
 
     Result run() final
@@ -1009,6 +998,9 @@ class race_task_base : public next_functions_task<Result, ParentResult, Containe
         std::rethrow_exception(std::current_exception());
       }
     }
+
+  protected:
+    Container<Func, Allocator> m_funcs;
 
   private:
     virtual void async_run(std::vector<std::future<void>>& futures) = 0;
