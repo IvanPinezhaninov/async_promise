@@ -35,6 +35,7 @@ include(CTest)
 include(Catch)
 
 set(HEADERS
+  src/common.h
   src/funcs.h
 )
 
@@ -46,13 +47,13 @@ set(SOURCES
   src/finally.cpp
   src/funcs.cpp
   src/initial.cpp
+  src/make_all_settled.cpp
+  src/make_all.cpp
+  src/make_any.cpp
+  src/make_race.cpp
+  src/make_rejected.cpp
+  src/make_resolved.cpp
   src/race.cpp
-  src/static_all_settled.cpp
-  src/static_all.cpp
-  src/static_any.cpp
-  src/static_race.cpp
-  src/static_reject.cpp
-  src/static_resolve.cpp
   src/then.cpp
 )
 

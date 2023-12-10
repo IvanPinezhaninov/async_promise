@@ -101,7 +101,7 @@ int main(int, char**)
     },
   };
 
-  auto future = async::promise<int>{sum, 2, 2}
+  auto future = async::make_promise(sum, 2, 2)
                 .then([] (int val) { print("sum: ", val); return val; })
                 .any(funcs)
                 .then([] (int val) { print("any: ", val); return val; })

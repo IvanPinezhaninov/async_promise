@@ -22,10 +22,11 @@
 #include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-static constexpr auto str = "Hello World!";
+// local
+#include "common.h"
 
 
-TEST_CASE("Static all settled void void", "[static all_setled]")
+TEST_CASE("Make all settled void void", "[make all setled]")
 {
   std::vector<void(*)()> funcs
   {
@@ -33,7 +34,7 @@ TEST_CASE("Static all settled void void", "[static all_setled]")
     [] () {},
   };
 
-  auto future = async::static_promise<std::vector<async::settled<void>>>::all_settled(funcs).run();
+  auto future = async::make_promise_all_settled(funcs).run();
 
   std::vector<async::settled<void>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -44,15 +45,15 @@ TEST_CASE("Static all settled void void", "[static all_setled]")
 }
 
 
-TEST_CASE("Static all settled error void void", "[static all_setled]")
+TEST_CASE("Make all settled error void void", "[make all setled]")
 {
   std::vector<void(*)()> funcs
   {
     [] () {},
-    [] () { throw std::runtime_error{str}; },
+    [] () { throw std::runtime_error{str2}; },
   };
 
-  auto future = async::static_promise<std::vector<async::settled<void>>>::all_settled(funcs).run();
+  auto future = async::make_promise_all_settled(funcs).run();
 
   std::vector<async::settled<void>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -60,11 +61,11 @@ TEST_CASE("Static all settled error void void", "[static all_setled]")
   REQUIRE(res.size() == funcs.size());
   REQUIRE(res.front().type == async::settle_type::resolved);
   REQUIRE(res.back().type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(res.back().error), std::runtime_error, Catch::Matchers::Message(str));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(res.back().error), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
-TEST_CASE("Static all settled void string", "[static all_setled]")
+TEST_CASE("Make all settled void string", "[make all setled]")
 {
   std::vector<void(*)(std::string)> funcs
   {
@@ -72,7 +73,7 @@ TEST_CASE("Static all settled void string", "[static all_setled]")
     [] (std::string) {},
   };
 
-  auto future = async::static_promise<std::vector<async::settled<void>>>::all_settled(funcs, str).run();
+  auto future = async::make_promise_all_settled(funcs, str1).run();
 
   std::vector<async::settled<void>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -83,15 +84,15 @@ TEST_CASE("Static all settled void string", "[static all_setled]")
 }
 
 
-TEST_CASE("Static all settled error void string", "[static all_setled]")
+TEST_CASE("Make all settled error void string", "[make all setled]")
 {
   std::vector<void(*)(std::string)> funcs
   {
     [] (std::string) {},
-    [] (std::string) { throw std::runtime_error{str}; },
+    [] (std::string) { throw std::runtime_error{str2}; },
   };
 
-  auto future = async::static_promise<std::vector<async::settled<void>>>::all_settled(funcs, str).run();
+  auto future = async::make_promise_all_settled(funcs, str1).run();
 
   std::vector<async::settled<void>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -99,40 +100,40 @@ TEST_CASE("Static all settled error void string", "[static all_setled]")
   REQUIRE(res.size() == funcs.size());
   REQUIRE(res.front().type == async::settle_type::resolved);
   REQUIRE(res.back().type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(res.back().error), std::runtime_error, Catch::Matchers::Message(str));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(res.back().error), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
-TEST_CASE("Static all settled string void", "[static all_setled]")
+TEST_CASE("Make all settled string void", "[make all setled]")
 {
   std::vector<std::string(*)()> funcs
   {
-    [] () { return std::string{str}; },
-    [] () { return std::string{str}; },
+    [] () { return std::string{str1}; },
+    [] () { return std::string{str2}; },
   };
 
-  auto future = async::static_promise<std::vector<async::settled<std::string>>>::all_settled(funcs).run();
+  auto future = async::make_promise_all_settled(funcs).run();
 
   std::vector<async::settled<std::string>> res;
   REQUIRE_NOTHROW(res = future.get());
 
   REQUIRE(res.size() == funcs.size());
   REQUIRE(res.front().type == async::settle_type::resolved);
-  REQUIRE(res.front().result == str);
+  REQUIRE(res.front().result == str1);
   REQUIRE(res.back().type == async::settle_type::resolved);
-  REQUIRE(res.back().result == str);
+  REQUIRE(res.back().result == str2);
 }
 
 
-TEST_CASE("Static all settled error string void", "[static all_setled]")
+TEST_CASE("Make all settled error string void", "[make all setled]")
 {
   std::vector<std::string(*)()> funcs
   {
-    [] () { return std::string{str}; },
-    [] () -> std::string { throw std::runtime_error{str}; },
+    [] () { return std::string{str1}; },
+    [] () -> std::string { throw std::runtime_error{str2}; },
   };
 
-  auto future = async::static_promise<std::vector<async::settled<std::string>>>::all_settled(funcs).run();
+  auto future = async::make_promise_all_settled(funcs).run();
 
   std::vector<async::settled<std::string>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -140,42 +141,42 @@ TEST_CASE("Static all settled error string void", "[static all_setled]")
   REQUIRE(res.size() == funcs.size());
 
   REQUIRE(res.front().type == async::settle_type::resolved);
-  REQUIRE(res.front().result == str);
+  REQUIRE(res.front().result == str1);
   REQUIRE(res.back().type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(res.back().error), std::runtime_error, Catch::Matchers::Message(str));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(res.back().error), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
-TEST_CASE("Static all settled string string", "[static all_setled]")
+TEST_CASE("Make all settled string string", "[make all setled]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
-    [] (std::string str) { return str; },
-    [] (std::string str) { return str; },
+    [] (std::string str) { return std::string{str1}; },
+    [] (std::string str) { return std::string{str2}; },
   };
 
-  auto future = async::static_promise<std::vector<async::settled<std::string>>>::all_settled(funcs, str).run();
+  auto future = async::make_promise_all_settled(funcs, str1).run();
 
   std::vector<async::settled<std::string>> res;
   REQUIRE_NOTHROW(res = future.get());
 
   REQUIRE(res.size() == funcs.size());
   REQUIRE(res.front().type == async::settle_type::resolved);
-  REQUIRE(res.front().result == str);
+  REQUIRE(res.front().result == str1);
   REQUIRE(res.back().type == async::settle_type::resolved);
-  REQUIRE(res.back().result == str);
+  REQUIRE(res.back().result == str2);
 }
 
 
-TEST_CASE("Static all settled error string string", "[static all_setled]")
+TEST_CASE("Make all settled error string string", "[make all setled]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
-    [] (std::string str) { return str; },
-    [] (std::string str) -> std::string { throw std::runtime_error{str}; },
+    [] (std::string str) { return std::string{str1}; },
+    [] (std::string str) -> std::string { throw std::runtime_error{str2}; },
   };
 
-  auto future = async::static_promise<std::vector<async::settled<std::string>>>::all_settled(funcs, str).run();
+  auto future = async::make_promise_all_settled(funcs, str1).run();
 
   std::vector<async::settled<std::string>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -183,7 +184,7 @@ TEST_CASE("Static all settled error string string", "[static all_setled]")
   REQUIRE(res.size() == funcs.size());
 
   REQUIRE(res.front().type == async::settle_type::resolved);
-  REQUIRE(res.front().result == str);
+  REQUIRE(res.front().result == str1);
   REQUIRE(res.back().type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(res.back().error), std::runtime_error, Catch::Matchers::Message(str));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(res.back().error), std::runtime_error, Catch::Matchers::Message(str2));
 }

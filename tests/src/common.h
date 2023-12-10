@@ -2,7 +2,7 @@
 **
 ** Copyright (C) 2023 Ivan Pinezhaninov <ivan.pinezhaninov@gmail.com>
 **
-** This file is part of the async_promise project - which can be found at
+** This file is part of the async_promise - which can be found at
 ** https://github.com/IvanPinezhaninov/async_promise/.
 **
 ** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -15,28 +15,11 @@
 **
 ******************************************************************************/
 
-// async_promise
-#include <async_promise.hpp>
+#ifndef COMMON_H
+#define COMMON_H
 
-// catch2
-#include <catch2/catch_test_macros.hpp>
+static constexpr auto aggregate_error_message = "All functions rejected";
+static constexpr auto str1 = "Hello World!";
+static constexpr auto str2 = "Hello Universe!";
 
-static constexpr auto str = "Hello World!";
-
-
-TEST_CASE("Resolve void", "[resolve]")
-{
-  auto future = async::static_promise<void>::resolve().run();
-
-  REQUIRE_NOTHROW(future.get());
-}
-
-
-TEST_CASE("Resolve string", "[resolve]")
-{
-  auto future = async::static_promise<std::string>::resolve(str).run();
-
-  std::string res;
-  REQUIRE_NOTHROW(res = future.get());
-  REQUIRE(res == str);
-}
+#endif // COMMON_H

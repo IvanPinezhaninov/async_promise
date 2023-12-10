@@ -29,7 +29,7 @@ static constexpr auto str = "Hello World!";
 
 TEST_CASE("Fail void void", "[fail]")
 {
-  auto future = async::static_promise<void>::reject(std::runtime_error{str}).fail(void_void).run();
+  auto future = async::make_rejected_promise(std::runtime_error{str}).fail(void_void).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -37,7 +37,7 @@ TEST_CASE("Fail void void", "[fail]")
 
 TEST_CASE("Fail void exception", "[fail]")
 {
-  auto future = async::static_promise<void>::reject(std::runtime_error{str}).fail(void_exception).run();
+  auto future = async::make_rejected_promise(std::runtime_error{str}).fail(void_exception).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -45,7 +45,7 @@ TEST_CASE("Fail void exception", "[fail]")
 
 TEST_CASE("Fail string void", "[fail]")
 {
-  auto future = async::static_promise<std::string>::reject(std::runtime_error{str}).fail(string_void).run();
+  auto future = async::make_rejected_promise<std::string>(std::runtime_error{str}).fail(string_void).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -53,7 +53,7 @@ TEST_CASE("Fail string void", "[fail]")
 
 TEST_CASE("Fail string exception", "[fail]")
 {
-  auto future = async::static_promise<std::string>::reject(std::runtime_error{str}).fail(string_exception).run();
+  auto future = async::make_rejected_promise<std::string>(std::runtime_error{str}).fail(string_exception).run();
 
   REQUIRE_NOTHROW(future.get());
 }

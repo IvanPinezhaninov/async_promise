@@ -115,19 +115,19 @@ struct settled final
     return *this;
   }
 
-  void swap(settled &other) noexcept
-  {
-    auto tmp = std::move(*this);
-    ::new(this) settled{std::move(other)};
-    ::new(&other) settled{std::move(tmp)};
-  }
-
   ~settled()
   {
     if (settle_type::resolved == type)
       result.~result_type();
     else
       error.~exception_ptr();
+  }
+
+  void swap(settled &other) noexcept
+  {
+    auto tmp = std::move(*this);
+    ::new(this) settled<Result>{std::move(other)};
+    ::new(&other) settled<Result>{std::move(tmp)};
   }
 
   /**
@@ -166,6 +166,11 @@ struct settled<void> final
     : type{settle_type::rejected}
     , error{std::move(error)}
   {}
+
+  void swap(settled& other) noexcept
+  {
+    std::swap(*this, other);
+  }
 
   /**
    * @brief @ref settle_type
@@ -239,23 +244,13 @@ class task
 {
   public:
     task() = default;
-    task(const task<Result>&) = default;
-    task(task<Result>&&) = default;
-    task& operator=(const task<Result>&) = default;
-    task& operator=(task<Result>&&) = default;
+    task(const task&) = default;
+    task(task&&) = default;
+    task& operator=(const task&) = default;
+    task& operator=(task&&) = default;
     virtual ~task() = default;
+
     virtual Result run() = 0;
-
-  protected:
-    template<typename T>
-    void reserve(T&, std::size_t)
-    {}
-
-    template<typename T>
-    void reserve(std::vector<T>& v, std::size_t n)
-    {
-      v.reserve(n);
-    }
 };
 
 
@@ -263,42 +258,55 @@ template<typename T>
 using task_ptr = std::shared_ptr<task<T>>;
 
 
-template<typename Result>
 class promise_helper
 {
-  protected:
-    void resolve()
+  public:
+    static void resolve(std::promise<void>& promise)
     {
       try
       {
-        m_promise.set_value();
+        promise.set_value();
       }
       catch(...)
       {}
     }
 
-    template<typename Value>
-    void resolve(Value&& val)
+    template<typename T, typename Value>
+    static void resolve(std::promise<T>& promise, Value&& val)
     {
       try
       {
-        m_promise.set_value(std::forward<Value>(val));
+        promise.set_value(std::forward<Value>(val));
       }
       catch(...)
       {}
     }
 
-    virtual void reject(std::exception_ptr err)
+    template<typename T>
+    static void reject(std::promise<T>& promise, std::exception_ptr err)
     {
       try
       {
-        m_promise.set_exception(std::move(err));
+        promise.set_exception(std::move(err));
       }
       catch(...)
       {}
     }
+};
 
-    std::promise<Result> m_promise;
+
+class vector_helper
+{
+  public:
+    template<typename T>
+    static void reserve(T&, std::size_t)
+    {}
+
+    template<typename T>
+    static void reserve(std::vector<T>& v, std::size_t n)
+    {
+      v.reserve(n);
+    }
 };
 
 
@@ -497,10 +505,10 @@ class all_task final : public next_task<Result, ParentResult>
 
       auto rv = this->m_parent->run();
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, std::bind(std::move(func), rv)));
+        futures.push_back(std::async(std::launch::async, std::move(func), rv));
 
       Result result;
-      this->reserve(result, m_funcs.size());
+      vector_helper::reserve(result, m_funcs.size());
 
       for (auto& future : futures)
         result.push_back(future.get());
@@ -529,7 +537,7 @@ class all_task<void, ParentResult, Container, Func, Allocator> final : public ne
 
       auto rv = this->m_parent->run();
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, std::bind(std::move(func), rv)));
+        futures.push_back(std::async(std::launch::async, std::move(func), rv));
 
       for (auto& future : futures)
       {
@@ -570,7 +578,7 @@ class all_task_void final : public next_task<Result, ParentResult>
         futures.push_back(std::async(std::launch::async, std::move(func)));
 
       Result result;
-      this->reserve(result, m_funcs.size());
+      vector_helper::reserve(result, m_funcs.size());
 
       for (auto& future : futures)
         result.push_back(future.get());
@@ -636,10 +644,10 @@ class all_settled_task final : public next_task<Result, ParentResult>
 
       auto rv = this->m_parent->run();
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, std::bind(std::move(func), rv)));
+        futures.push_back(std::async(std::launch::async, std::move(func), rv));
 
       Result result;
-      this->reserve(result, m_funcs.size());
+      vector_helper::reserve(result, m_funcs.size());
 
       for (auto& future : futures)
       {
@@ -679,10 +687,10 @@ class all_settled_task<Result, ParentResult, void, Container, Func, Allocator> f
 
       auto rv = this->m_parent->run();
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, std::bind(std::move(func), rv)));
+        futures.push_back(std::async(std::launch::async, std::move(func), rv));
 
       Result result;
-      this->reserve(result, m_funcs.size());
+      vector_helper::reserve(result, m_funcs.size());
 
       for (auto& future : futures)
       {
@@ -725,7 +733,7 @@ class all_settled_task_void final : public next_task<Result, ParentResult>
         futures.push_back(std::async(std::launch::async, std::move(func)));
 
       Result result;
-      this->reserve(result, m_funcs.size());
+      vector_helper::reserve(result, m_funcs.size());
 
       for (auto& future : futures)
       {
@@ -768,7 +776,7 @@ class all_settled_task_void<Result, ParentResult, void, Container, Func, Allocat
         futures.push_back(std::async(std::launch::async, std::move(func)));
 
       Result result;
-      this->reserve(result, m_funcs.size());
+      vector_helper::reserve(result, m_funcs.size());
 
       for (auto& future : futures)
       {
@@ -793,7 +801,7 @@ class all_settled_task_void<Result, ParentResult, void, Container, Func, Allocat
 
 template<typename Result, typename ParentResult,
          template<typename, typename> class Container, typename Func, typename Allocator>
-class any_task_base : public next_task<Result, ParentResult>, public promise_helper<Result>
+class any_task_base : public next_task<Result, ParentResult>
 {
   public:
     any_task_base(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
@@ -803,10 +811,10 @@ class any_task_base : public next_task<Result, ParentResult>, public promise_hel
 
     Result run() final
     {
-      auto future = this->m_promise.get_future();
+      auto future = m_promise.get_future();
       std::vector<std::future<void>> futures;
-      futures.reserve(this->m_funcs.size());
-      m_errors.reserve(this->m_funcs.size());
+      futures.reserve(m_funcs.size());
+      m_errors.reserve(m_funcs.size());
       async_run(futures);
 
       try
@@ -820,19 +828,19 @@ class any_task_base : public next_task<Result, ParentResult>, public promise_hel
     }
 
   protected:
-    void reject(std::exception_ptr err) final
+    void process_error(std::exception_ptr err)
     {
       std::lock_guard<std::mutex> lock{m_mutex};
 
       m_errors.push_back(std::move(err));
-      if (m_errors.size() < this->m_funcs.size())
+      if (m_errors.size() < m_funcs.size())
         return;
 
-      promise_helper<Result>::reject(std::make_exception_ptr(aggregate_error{std::move(m_errors)}));
+      promise_helper::reject(m_promise, std::make_exception_ptr(aggregate_error{std::move(m_errors)}));
     }
 
-  protected:
     Container<Func, Allocator> m_funcs;
+    std::promise<Result> m_promise;
 
   private:
     virtual void async_run(std::vector<std::future<void>>& futures) = 0;
@@ -864,11 +872,11 @@ class any_task final : public any_task_base<Result, ParentResult, Container, Fun
     {
       try
       {
-        this->resolve(func(std::move(arg)));
+        promise_helper::resolve(this->m_promise, func(std::move(arg)));
       }
       catch(...)
       {
-        this->reject(std::current_exception());
+        this->process_error(std::current_exception());
       }
     }
 };
@@ -897,11 +905,11 @@ class any_task<void, ParentResult, Container, Func, Allocator> final
       try
       {
         func(std::move(arg));
-        this->resolve();
+        promise_helper::resolve(this->m_promise);
       }
       catch(...)
       {
-        this->reject(std::current_exception());
+        this->process_error(std::current_exception());
       }
     }
 };
@@ -929,11 +937,11 @@ class any_task_void final : public any_task_base<Result, ParentResult, Container
     {
       try
       {
-        this->resolve(func());
+        promise_helper::resolve(this->m_promise, func());
       }
       catch(...)
       {
-        this->reject(std::current_exception());
+        this->process_error(std::current_exception());
       }
     }
 };
@@ -962,11 +970,11 @@ class any_task_void<void, ParentResult, Container, Func, Allocator> final
       try
       {
         func();
-        this->resolve();
+        promise_helper::resolve(this->m_promise);
       }
       catch(...)
       {
-        this->reject(std::current_exception());
+        this->process_error(std::current_exception());
       }
     }
 };
@@ -974,7 +982,7 @@ class any_task_void<void, ParentResult, Container, Func, Allocator> final
 
 template<typename Result, typename ParentResult,
          template<typename, typename> class Container, typename Func, typename Allocator>
-class race_task_base : public next_task<Result, ParentResult>, public promise_helper<Result>
+class race_task_base : public next_task<Result, ParentResult>
 {
   public:
     race_task_base(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
@@ -984,9 +992,9 @@ class race_task_base : public next_task<Result, ParentResult>, public promise_he
 
     Result run() final
     {
-      auto future = this->m_promise.get_future();
+      auto future = m_promise.get_future();
       std::vector<std::future<void>> futures;
-      futures.reserve(this->m_funcs.size());
+      futures.reserve(m_funcs.size());
       async_run(futures);
 
       try
@@ -1001,6 +1009,7 @@ class race_task_base : public next_task<Result, ParentResult>, public promise_he
 
   protected:
     Container<Func, Allocator> m_funcs;
+    std::promise<Result> m_promise;
 
   private:
     virtual void async_run(std::vector<std::future<void>>& futures) = 0;
@@ -1029,11 +1038,11 @@ class race_task final : public race_task_base<Result, ParentResult, Container, F
     {
       try
       {
-        this->resolve(func(std::move(arg)));
+        promise_helper::resolve(this->m_promise, func(std::move(arg)));
       }
       catch(...)
       {
-        this->reject(std::current_exception());
+        promise_helper::reject(this->m_promise, std::current_exception());
       }
     }
 };
@@ -1062,11 +1071,11 @@ class race_task<void, ParentResult, Container, Func, Allocator> final
       try
       {
         func(std::move(arg));
-        this->resolve();
+        promise_helper::resolve(this->m_promise);
       }
       catch(...)
       {
-        this->reject(std::current_exception());
+        promise_helper::reject(this->m_promise, std::current_exception());
       }
     }
 };
@@ -1094,11 +1103,11 @@ class race_task_void final : public race_task_base<Result, ParentResult, Contain
     {
       try
       {
-        this->resolve(func());
+        promise_helper::resolve(this->m_promise, func());
       }
       catch(...)
       {
-        this->reject(std::current_exception());
+        promise_helper::reject(this->m_promise, std::current_exception());
       }
     }
 };
@@ -1127,11 +1136,11 @@ class race_task_void<void, ParentResult, Container, Func, Allocator> final
       try
       {
         func();
-        this->resolve();
+        promise_helper::resolve(this->m_promise);
       }
       catch(...)
       {
-        this->reject(std::current_exception());
+        promise_helper::reject(this->m_promise, std::current_exception());
       }
     }
 };
@@ -1139,11 +1148,11 @@ class race_task_void<void, ParentResult, Container, Func, Allocator> final
 
 template<typename Result, template<typename, typename> class Container,
          typename Func, typename Allocator, typename... Args>
-class all_task_static final : public task<Result>
+class make_all_task final : public task<Result>
 {
   public:
     template<typename... Args_>
-    explicit all_task_static(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_all_task(Container<Func, Allocator> funcs, Args_&&... args)
       : m_funcs{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -1154,12 +1163,12 @@ class all_task_static final : public task<Result>
       std::vector<std::future<value_type>> futures;
       futures.reserve(m_funcs.size());
 
-      using task = all_task_static<Result, Container, Func, Allocator, Args...>;
+      using task = make_all_task<Result, Container, Func, Allocator, Args...>;
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, std::bind(&task::call, this, std::move(func))));
 
       Result result;
-      this->reserve(result, m_funcs.size());
+      vector_helper::reserve(result, m_funcs.size());
 
       for (auto& future : futures)
         result.push_back(future.get());
@@ -1179,11 +1188,11 @@ class all_task_static final : public task<Result>
 
 
 template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args>
-class all_task_static<void, Container, Func, Allocator, Args...> final : public task<void>
+class make_all_task<void, Container, Func, Allocator, Args...> final : public task<void>
 {
   public:
     template<typename... Args_>
-    explicit all_task_static(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_all_task(Container<Func, Allocator> funcs, Args_&&... args)
       : m_funcs{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -1193,7 +1202,7 @@ class all_task_static<void, Container, Func, Allocator, Args...> final : public 
       std::vector<std::future<void>> futures;
       futures.reserve(m_funcs.size());
 
-      using task = all_task_static<void, Container, Func, Allocator, Args...>;
+      using task = make_all_task<void, Container, Func, Allocator, Args...>;
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, std::bind(&task::call, this, std::move(func))));
 
@@ -1223,11 +1232,11 @@ class all_task_static<void, Container, Func, Allocator, Args...> final : public 
 
 template<typename Result, typename FuncResult, template<typename, typename> class Container,
          typename Func, typename Allocator, typename... Args>
-class all_settled_task_static final : public task<Result>
+class make_all_settled_task final : public task<Result>
 {
   public:
     template<typename... Args_>
-    explicit all_settled_task_static(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_all_settled_task(Container<Func, Allocator> funcs, Args_&&... args)
       : m_funcs{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -1237,12 +1246,12 @@ class all_settled_task_static final : public task<Result>
       std::vector<std::future<FuncResult>> futures;
       futures.reserve(m_funcs.size());
 
-      using task = all_settled_task_static<Result, FuncResult, Container, Func, Allocator, Args...>;
+      using task = make_all_settled_task<Result, FuncResult, Container, Func, Allocator, Args...>;
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, std::bind(&task::call, this, std::move(func))));
 
       Result result;
-      this->reserve(result, m_funcs.size());
+      vector_helper::reserve(result, m_funcs.size());
 
       for (auto& future : futures)
       {
@@ -1272,11 +1281,11 @@ class all_settled_task_static final : public task<Result>
 
 template<typename Result, template<typename, typename> class Container,
          typename Func, typename Allocator, typename... Args>
-class all_settled_task_static<Result, void, Container, Func, Allocator, Args...> final : public task<Result>
+class make_all_settled_task<Result, void, Container, Func, Allocator, Args...> final : public task<Result>
 {
   public:
     template<typename... Args_>
-    explicit all_settled_task_static(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_all_settled_task(Container<Func, Allocator> funcs, Args_&&... args)
       : m_funcs{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -1286,12 +1295,12 @@ class all_settled_task_static<Result, void, Container, Func, Allocator, Args...>
       std::vector<std::future<void>> futures;
       futures.reserve(m_funcs.size());
 
-      using task = all_settled_task_static<Result, void, Container, Func, Allocator, Args...>;
+      using task = make_all_settled_task<Result, void, Container, Func, Allocator, Args...>;
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, std::bind(&task::call, this, std::move(func))));
 
       Result result;
-      this->reserve(result, m_funcs.size());
+      vector_helper::reserve(result, m_funcs.size());
 
       for (auto& future : futures)
       {
@@ -1321,7 +1330,7 @@ class all_settled_task_static<Result, void, Container, Func, Allocator, Args...>
 
 
 template<typename Result, template<typename, typename> class Container, typename Func, typename Allocator>
-class any_task_static_base : public task<Result>, public promise_helper<Result>
+class any_task_static_base : public task<Result>
 {
   public:
     explicit any_task_static_base(Container<Func, Allocator> funcs)
@@ -1330,10 +1339,10 @@ class any_task_static_base : public task<Result>, public promise_helper<Result>
 
     Result run() final
     {
-      auto future = this->m_promise.get_future();
+      auto future = m_promise.get_future();
       std::vector<std::future<void>> futures;
-      futures.reserve(this->m_funcs.size());
-      m_errors.reserve(this->m_funcs.size());
+      futures.reserve(m_funcs.size());
+      m_errors.reserve(m_funcs.size());
 
       using task = any_task_static_base<Result, Container, Func, Allocator>;
       for (auto func : m_funcs)
@@ -1350,16 +1359,18 @@ class any_task_static_base : public task<Result>, public promise_helper<Result>
     }
 
   protected:
-    void reject(std::exception_ptr err)
+    void process_error(std::exception_ptr err)
     {
       std::lock_guard<std::mutex> lock{m_mutex};
 
       m_errors.push_back(std::move(err));
-      if (m_errors.size() < this->m_funcs.size())
+      if (m_errors.size() < m_funcs.size())
         return;
 
-      promise_helper<Result>::reject(std::make_exception_ptr(aggregate_error{std::move(m_errors)}));
+      promise_helper::reject(m_promise, std::make_exception_ptr(aggregate_error{std::move(m_errors)}));
     }
+
+    std::promise<Result> m_promise;
 
   private:
     virtual void call(Func func) = 0;
@@ -1372,11 +1383,11 @@ class any_task_static_base : public task<Result>, public promise_helper<Result>
 
 template<typename Result, template<typename, typename> class Container,
          typename Func, typename Allocator, typename... Args>
-class any_task_static final : public any_task_static_base<Result, Container, Func, Allocator>
+class make_any_task final : public any_task_static_base<Result, Container, Func, Allocator>
 {
   public:
     template<typename... Args_>
-    explicit any_task_static(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_any_task(Container<Func, Allocator> funcs, Args_&&... args)
       : any_task_static_base<Result, Container, Func, Allocator>{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -1386,11 +1397,11 @@ class any_task_static final : public any_task_static_base<Result, Container, Fun
     {
       try
       {
-        this->resolve(apply(std::move(func), m_args));
+        promise_helper::resolve(this->m_promise, apply(std::move(func), m_args));
       }
       catch(...)
       {
-        this->reject(std::current_exception());
+        this->process_error(std::current_exception());
       }
     }
 
@@ -1399,12 +1410,12 @@ class any_task_static final : public any_task_static_base<Result, Container, Fun
 
 
 template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args>
-class any_task_static<void, Container, Func, Allocator, Args...> final
+class make_any_task<void, Container, Func, Allocator, Args...> final
     : public any_task_static_base<void, Container, Func, Allocator>
 {
   public:
     template<typename... Args_>
-    explicit any_task_static(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_any_task(Container<Func, Allocator> funcs, Args_&&... args)
       : any_task_static_base<void, Container, Func, Allocator>{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -1415,11 +1426,11 @@ class any_task_static<void, Container, Func, Allocator, Args...> final
       try
       {
         apply(std::move(func), m_args);
-        this->resolve();
+        promise_helper::resolve(this->m_promise);
       }
       catch(...)
       {
-        this->reject(std::current_exception());
+        this->process_error(std::current_exception());
       }
     }
 
@@ -1429,7 +1440,7 @@ class any_task_static<void, Container, Func, Allocator, Args...> final
 
 template<typename Result, template<typename, typename> class Container,
          typename Func, typename Allocator>
-class race_task_static_base : public task<Result>, public promise_helper<Result>
+class race_task_static_base : public task<Result>
 {
   public:
     template<typename... Args_>
@@ -1439,9 +1450,9 @@ class race_task_static_base : public task<Result>, public promise_helper<Result>
 
     Result run() final
     {
-      auto future = this->m_promise.get_future();
+      auto future = m_promise.get_future();
       std::vector<std::future<void>> futures;
-      futures.reserve(this->m_funcs.size());
+      futures.reserve(m_funcs.size());
 
       using task = race_task_static_base<Result, Container, Func, Allocator>;
       for (auto func : m_funcs)
@@ -1457,6 +1468,9 @@ class race_task_static_base : public task<Result>, public promise_helper<Result>
       }
     }
 
+  protected:
+    std::promise<Result> m_promise;
+
   private:
     virtual void call(Func func) = 0;
 
@@ -1466,11 +1480,11 @@ class race_task_static_base : public task<Result>, public promise_helper<Result>
 
 template<typename Result, template<typename, typename> class Container,
          typename Func, typename Allocator, typename... Args>
-class race_task_static final : public race_task_static_base<Result, Container, Func, Allocator>
+class make_race_task final : public race_task_static_base<Result, Container, Func, Allocator>
 {
   public:
     template<typename... Args_>
-    explicit race_task_static(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_race_task(Container<Func, Allocator> funcs, Args_&&... args)
       : race_task_static_base<Result, Container, Func, Allocator>{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -1480,11 +1494,11 @@ class race_task_static final : public race_task_static_base<Result, Container, F
     {
       try
       {
-        this->resolve(apply(std::move(func), m_args));
+        promise_helper::resolve(this->m_promise, apply(std::move(func), m_args));
       }
       catch(...)
       {
-        this->reject(std::current_exception());
+        promise_helper::reject(this->m_promise, std::current_exception());
       }
     }
 
@@ -1493,12 +1507,12 @@ class race_task_static final : public race_task_static_base<Result, Container, F
 
 
 template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args>
-class race_task_static<void, Container, Func, Allocator, Args...> final
+class make_race_task<void, Container, Func, Allocator, Args...> final
     : public race_task_static_base<void, Container, Func, Allocator>
 {
   public:
     template<typename... Args_>
-    explicit race_task_static(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_race_task(Container<Func, Allocator> funcs, Args_&&... args)
       : race_task_static_base<void, Container, Func, Allocator>{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -1509,11 +1523,11 @@ class race_task_static<void, Container, Func, Allocator, Args...> final
       try
       {
         apply(std::move(func), m_args);
-        this->resolve();
+        promise_helper::resolve(this->m_promise);
       }
       catch(...)
       {
-        this->reject(std::current_exception());
+        promise_helper::reject(this->m_promise, std::current_exception());
       }
     }
 
@@ -1522,11 +1536,11 @@ class race_task_static<void, Container, Func, Allocator, Args...> final
 
 
 template<typename Result>
-class resolve_task final : public task<Result>
+class make_resolved_task final : public task<Result>
 {
   public:
     template<typename T>
-    explicit resolve_task(T&& val)
+    explicit make_resolved_task(T&& val)
       : m_val{std::forward<T>(val)}
     {}
 
@@ -1541,7 +1555,7 @@ class resolve_task final : public task<Result>
 
 
 template<>
-class resolve_task<void> final : public task<void>
+class make_resolved_task<void> final : public task<void>
 {
   public:
     void run() final
@@ -1550,11 +1564,11 @@ class resolve_task<void> final : public task<void>
 
 
 template<typename Result, typename Error>
-class reject_task final : public task<Result>
+class make_rejected_task final : public task<Result>
 {
   public:
     template<typename T>
-    explicit reject_task(T&& error)
+    explicit make_rejected_task(T&& error)
       : m_error{std::forward<T>(error)}
     {}
 
@@ -1900,115 +1914,152 @@ class promise
 
 
 /**
- * @brief Promise class with static methods.
+ * @brief Make promise with an function to be called.
+ *        Return promise object with a result or an error.
+ * @param func - Function.
+ * @param args - Function arguments.
+ * @return Promise object.
+ */
+template<typename Func, typename... Args,
+         typename Result = typename std::result_of<Func(Args...)>::type>
+static promise<Result> make_promise(Func&& func, Args&&... args)
+{
+  return promise<Result>{std::forward<Func>(func), std::forward<Args>(args)...};
+}
+
+
+/**
+ * @brief Make promise with an iterable of functions to be called.
+ *        Return promise object with an iterable of results or first rejection reason.
+ * @param funcs - Functions.
+ * @param args - Function arguments.
+ * @return Promise object.
+ */
+template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
+         typename FuncResult = typename std::result_of<Func(Args...)>::type,
+         typename Result = Container<FuncResult, std::allocator<FuncResult>>,
+         typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
+static promise<Result> make_promise_all(Container<Func, Allocator> funcs, Args&&... args)
+{
+  using task = internal::make_all_task<Result, Container, Func, Allocator, Args...>;
+  return promise<Result>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
+}
+
+
+/**
+ * @brief Make promise with an iterable of functions to be called.
+ *        Return promise object with void or first rejection reason.
+ * @param funcs - Functions.
+ * @param args - Function arguments.
+ * @return Promise object.
+ */
+template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
+         typename FuncResult = typename std::result_of<Func(Args...)>::type,
+         typename = typename std::enable_if<std::is_void<FuncResult>::value>::type>
+static promise<void> make_promise_all(Container<Func, Allocator> funcs, Args&&... args)
+{
+  using task = internal::make_all_task<void, Container, Func, Allocator, Args...>;
+  return promise<void>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
+}
+
+
+/**
+ * @brief Make promise with an iterable of functions to be called.
+ *        Return an iterable of @ref settled objects with a result or an error.
+ * @param funcs - Functions.
+ * @param args - Function arguments.
+ * @return Promise object.
+ */
+template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
+         typename FuncResult = typename std::result_of<Func(Args...)>::type,
+         typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>>
+static promise<Result> make_promise_all_settled(Container<Func, Allocator> funcs, Args&&... args)
+{
+  using task = internal::make_all_settled_task<Result, FuncResult, Container, Func, Allocator, Args...>;
+  return promise<Result>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
+}
+
+
+/**
+ * @brief Make promise with an iterable of functions to be called.
+ *        Return first resolved result.
+ * @param funcs - Functions.
+ * @param args - Function arguments.
+ * @return Promise object.
+ */
+template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
+         typename Result = typename std::result_of<Func(Args...)>::type>
+static promise<Result> make_promise_any(Container<Func, Allocator> funcs, Args&&... args)
+{
+  using task = internal::make_any_task<Result, Container, Func, Allocator, Args...>;
+  return promise<Result>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
+}
+
+
+/**
+ * @brief Make promise with an iterable of functions to be called.
+ *        Return first resolved or rejected result.
+ * @param funcs - Functions.
+ * @param args - Function arguments.
+ * @return Promise object.
+ */
+template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
+         typename Result = typename std::result_of<Func(Args...)>::type>
+static promise<Result> make_promise_race(Container<Func, Allocator> funcs, Args&&... args)
+{
+  using task = internal::make_race_task<Result, Container, Func, Allocator, Args...>;
+  return promise<Result>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
+}
+
+
+/**
+ * @brief Make promise with resolved state.
+ * @param value - Any value.
+ * @return Promise object.
  */
 template<typename T>
-class static_promise
+static promise<T> make_resolved_promise(T&& value)
 {
-  public:
-    static_promise(const static_promise&) = default;
-    static_promise(static_promise&&) = default;
-    static_promise& operator=(const static_promise&) = default;
-    static_promise& operator=(static_promise&&) = default;
-    virtual ~static_promise() = default;
-
-    /**
-     * @brief Add an iterable of functions to be called.
-     *        Return an iterable of results or first rejection reason.
-     * @param funcs - Functions.
-     * @param args - Function arguments.
-     * @return Promise object.
-     */
-    template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args>
-    static promise<T> all(Container<Func, Allocator> funcs, Args&&... args)
-    {
-      using task = internal::all_task_static<T, Container, Func, Allocator, Args...>;
-      return promise<T>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
-    }
+  using task = internal::make_resolved_task<T>;
+  return promise<T>{std::make_shared<task>(std::forward<T>(value))};
+}
 
 
-    /**
-     * @brief Add an iterable of functions to be called.
-     *        Return an iterable of @ref settled objects with a result or an error.
-     * @param funcs - Functions.
-     * @param args - Function arguments.
-     * @return Promise object.
-     */
-    template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args>
-    static promise<T> all_settled(Container<Func, Allocator> funcs, Args&&... args)
-    {
-      using FuncResult = typename T::value_type::result_type;
-      using task = internal::all_settled_task_static<T, FuncResult, Container, Func, Allocator, Args...>;
-      return promise<T>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
-    }
+/**
+ * @brief Make promise with resolved state.
+ * @return Promise object.
+ */
+static promise<void> make_resolved_promise()
+{
+  using task = internal::make_resolved_task<void>;
+  return promise<void>{std::make_shared<task>()};
+}
 
 
-    /**
-     * @brief Add an iterable of functions to be called.
-     *        Return first resolved result.
-     * @param funcs - Functions.
-     * @param args - Function arguments.
-     * @return Promise object.
-     */
-    template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args>
-    static promise<T> any(Container<Func, Allocator> funcs, Args&&... args)
-    {
-      using task = internal::any_task_static<T, Container, Func, Allocator, Args...>;
-      return promise<T>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
-    }
+/**
+ * @brief Make promise with rejected state.
+ * @param error - Any error
+ * @return Promise object.
+ */
+template<typename T, typename Error>
+static promise<T> make_rejected_promise(Error&& error)
+{
+  using task = internal::make_rejected_task<T, Error>;
+  return promise<T>{std::make_shared<task>(std::forward<Error>(error))};
+}
 
 
-    /**
-     * @brief Add an iterable of functions to be called.
-     *        Return first resolved or rejected result.
-     * @param funcs - Functions.
-     * @param args - Function arguments.
-     * @return Promise object.
-     */
-    template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args>
-    static promise<T> race(Container<Func, Allocator> funcs, Args&&... args)
-    {
-      using task = internal::race_task_static<T, Container, Func, Allocator, Args...>;
-      return promise<T>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
-    }
-
-
-    /**
-     * @brief Create promise with resolved state.
-     * @param value - Any value.
-     * @return Promise object.
-     */
-    template<typename Result>
-    static promise<T> resolve(Result&& value)
-    {
-      using task = internal::resolve_task<T>;
-      return promise<T>{std::make_shared<task>(std::forward<Result>(value))};
-    }
-
-
-    /**
-     * @brief Create promise with resolved state.
-     * @return Promise object.
-     */
-    static promise<T> resolve()
-    {
-      using task = internal::resolve_task<T>;
-      return promise<T>{std::make_shared<task>()};
-    }
-
-
-    /**
-     * @brief Create promise with rejected state.
-     * @param error - Any error
-     * @return Promise object.
-     */
-    template<typename Error>
-    static promise<T> reject(Error&& error)
-    {
-      using task = internal::reject_task<T, Error>;
-      return promise<T>{std::make_shared<task>(std::forward<Error>(error))};
-    }
-};
+/**
+ * @brief Make promise with rejected state.
+ * @param error - Any error
+ * @return Promise object.
+ */
+template<typename Error>
+static promise<void> make_rejected_promise(Error&& error)
+{
+  using task = internal::make_rejected_task<void, Error>;
+  return promise<void>{std::make_shared<task>(std::forward<Error>(error))};
+}
 
 } // namespace async
 
