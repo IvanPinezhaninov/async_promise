@@ -54,6 +54,8 @@ set(SOURCES
   src/make_rejected.cpp
   src/make_resolved.cpp
   src/race.cpp
+  src/settled.cpp
+  src/smoke.cpp
   src/then.cpp
 )
 
