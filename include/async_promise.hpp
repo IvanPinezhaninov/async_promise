@@ -497,10 +497,10 @@ template<typename Result, typename ParentResult, typename Func>
 class then_func_task final : public next_task<Result, ParentResult>
 {
   public:
-    template<typename T>
-    then_func_task(task_ptr<ParentResult> parent, T&& func)
+    template<typename Func_>
+    then_func_task(task_ptr<ParentResult> parent, Func_&& func)
       : next_task<Result, ParentResult>{std::move(parent)}
-      , m_func{std::forward<T>(func)}
+      , m_func{std::forward<Func_>(func)}
     {}
 
     Result run() final
@@ -517,10 +517,10 @@ template<typename Result, typename ParentResult, typename Func>
 class then_func_task_void final : public next_task<Result, ParentResult>
 {
   public:
-    template<typename T>
-    then_func_task_void(task_ptr<ParentResult> parent, T&& func)
+    template<typename Func_>
+    then_func_task_void(task_ptr<ParentResult> parent, Func_&& func)
       : next_task<Result, ParentResult>{std::move(parent)}
-      , m_func{std::forward<T>(func)}
+      , m_func{std::forward<Func_>(func)}
     {}
 
     Result run() final
@@ -534,14 +534,72 @@ class then_func_task_void final : public next_task<Result, ParentResult>
 };
 
 
-template<typename Result, typename ParentResult, typename Func>
-class fail_task final : public next_task<Result, ParentResult>
+template<typename Result, typename ParentResult, typename Method, typename Class>
+class fail_class_task final : public next_task<Result, ParentResult>
 {
   public:
-    template<typename T>
-    fail_task(task_ptr<ParentResult> parent, T&& func)
+    template<typename Method_>
+    fail_class_task(task_ptr<ParentResult> parent, Method_&& method, Class* obj)
       : next_task<Result, ParentResult>{std::move(parent)}
-      , m_func{std::forward<T>(func)}
+      , m_method{std::forward<Method_>(method)}
+      , m_obj{obj}
+    {}
+
+    Result run() final
+    {
+      try
+      {
+        return this->m_parent->run();
+      }
+      catch(...)
+      {
+        return (m_obj->*m_method)(std::current_exception());
+      }
+    }
+
+  private:
+    Method m_method;
+    Class* const m_obj;
+};
+
+
+template<typename Result, typename ParentResult, typename Method, typename Class>
+class fail_class_task_void final : public next_task<Result, ParentResult>
+{
+  public:
+    template<typename Method_>
+    fail_class_task_void(task_ptr<ParentResult> parent, Method_&& method, Class* obj)
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_method{std::forward<Method_>(method)}
+      , m_obj{obj}
+    {}
+
+    Result run() final
+    {
+      try
+      {
+        return this->m_parent->run();
+      }
+      catch(...)
+      {
+        return (m_obj->*m_method)();
+      }
+    }
+
+  private:
+    Method m_method;
+    Class* const m_obj;
+};
+
+
+template<typename Result, typename ParentResult, typename Func>
+class fail_func_task final : public next_task<Result, ParentResult>
+{
+  public:
+    template<typename Method_>
+    fail_func_task(task_ptr<ParentResult> parent, Method_&& func)
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_func{std::forward<Method_>(func)}
     {}
 
     Result run() final
@@ -562,13 +620,13 @@ class fail_task final : public next_task<Result, ParentResult>
 
 
 template<typename Result, typename ParentResult, typename Func>
-class fail_task_void final : public next_task<Result, ParentResult>
+class fail_func_task_void final : public next_task<Result, ParentResult>
 {
   public:
-    template<typename T>
-    fail_task_void(task_ptr<ParentResult> parent, T&& func)
+    template<typename Func_>
+    fail_func_task_void(task_ptr<ParentResult> parent, Func_&& func)
       : next_task<Result, ParentResult>{std::move(parent)}
-      , m_func{std::forward<T>(func)}
+      , m_func{std::forward<Func_>(func)}
     {}
 
     Result run() final
@@ -588,14 +646,43 @@ class fail_task_void final : public next_task<Result, ParentResult>
 };
 
 
-template<typename Result, typename ParentResult, typename Func>
-class finally_task final : public next_task<Result, ParentResult>
+template<typename Result, typename ParentResult, typename Method, typename Class>
+class finally_class_task final : public next_task<Result, ParentResult>
 {
   public:
-    template<typename T>
-    finally_task(task_ptr<ParentResult> parent, T&& func)
+    template<typename Method_>
+    finally_class_task(task_ptr<ParentResult> parent, Method_&& method, Class* obj)
       : next_task<Result, ParentResult>{std::move(parent)}
-      , m_func{std::forward<T>(func)}
+      , m_method{std::forward<Method_>(method)}
+      , m_obj{obj}
+    {}
+
+    Result run() final
+    {
+      try
+      {
+        this->m_parent->run();
+      }
+      catch(...)
+      {}
+
+      return (m_obj->*m_method)();
+    }
+
+  private:
+    Method m_method;
+    Class* const m_obj;
+};
+
+
+template<typename Result, typename ParentResult, typename Func>
+class finally_func_task final : public next_task<Result, ParentResult>
+{
+  public:
+    template<typename Func_>
+    finally_func_task(task_ptr<ParentResult> parent, Func_&& func)
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_func{std::forward<Func_>(func)}
     {}
 
     Result run() final
@@ -1821,6 +1908,40 @@ class promise
 
 
     /**
+     * @brief Add a class method to be called if the previous function was rejected.
+     * @param method - Method that receives an exception object of a rejected function.
+     *                 Must return a value of the same type as the previous function.
+     * @param obj - Object containing the required method.
+     * @return Promise object.
+     */
+    template<typename Method, typename Class, typename Arg = std::exception_ptr,
+             typename Result = typename std::result_of<Method(Class*, Arg)>::type,
+             typename = typename std::enable_if<std::is_same<Result, T>::value>::type>
+    promise<Result> fail(Method&& method, Class* obj) const
+    {
+      using task = internal::fail_class_task<Result, T, Method, Class>;
+      return promise<Result>{std::make_shared<task>(m_task, std::forward<Method>(method), obj)};
+    }
+
+
+    /**
+     * @brief Add a class method to be called if the previous function was rejected.
+     * @param method - Method that not receives any result of a rejected function.
+     *                 Must return a value of the same type as the previous function.
+     * @param obj - Object containing the required method.
+     * @return Promise object.
+     */
+    template<typename Method, typename Class,
+             typename Result = typename std::result_of<Method(Class*)>::type,
+             typename = typename std::enable_if<std::is_same<Result, T>::value>::type>
+    promise<Result> fail(Method&& method, Class* obj) const
+    {
+      using task = internal::fail_class_task_void<Result, T, Method, Class>;
+      return promise<Result>{std::make_shared<task>(m_task, std::forward<Method>(method), obj)};
+    }
+
+
+    /**
      * @brief Add a function to be called if the previous function was rejected.
      * @param func - Function that receives an exception object of a rejected function.
      *               Must return a value of the same type as the previous function.
@@ -1831,7 +1952,7 @@ class promise
              typename = typename std::enable_if<std::is_same<Result, T>::value>::type>
     promise<Result> fail(Func&& func) const
     {
-      using task = internal::fail_task<Result, T, Func>;
+      using task = internal::fail_func_task<Result, T, Func>;
       return promise<Result>{std::make_shared<task>(m_task, std::forward<Func>(func))};
     }
 
@@ -1846,8 +1967,22 @@ class promise
              typename = typename std::enable_if<std::is_same<Result, T>::value>::type>
     promise<Result> fail(Func&& func) const
     {
-      using task = internal::fail_task_void<Result, T, Func>;
+      using task = internal::fail_func_task_void<Result, T, Func>;
       return promise<Result>{std::make_shared<task>(m_task, std::forward<Func>(func))};
+    }
+
+
+    /**
+     * @brief Add a class method to be called if the previous function was either resolved or rejected.
+     * @param method - Method that not receives any result of the previous function.
+     * @param obj - Object containing the required method.
+     * @return Promise object.
+     */
+    template<typename Method, typename Class, typename Result = typename std::result_of<Method(Class*)>::type>
+    promise<Result> finally(Method&& method, Class* obj) const
+    {
+      using task = internal::finally_class_task<Result, T, Method, Class>;
+      return promise<Result>{std::make_shared<task>(m_task, std::forward<Method>(method), obj)};
     }
 
 
@@ -1859,7 +1994,7 @@ class promise
     template<typename Func, typename Result = typename std::result_of<Func()>::type>
     promise<Result> finally(Func&& func) const
     {
-      using task = internal::finally_task<Result, T, Func>;
+      using task = internal::finally_func_task<Result, T, Func>;
       return promise<Result>{std::make_shared<task>(m_task, std::forward<Func>(func))};
     }
 

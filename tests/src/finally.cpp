@@ -25,7 +25,47 @@
 #include "common.h"
 
 
-TEST_CASE("Finally resolve void void", "[finally]")
+TEST_CASE("Finally with class method resolve void void", "[finally]")
+{
+  test_struct test;
+  auto future = async::make_resolved_promise().finally(&test_struct::void_void, &test).run();
+
+  REQUIRE_NOTHROW(future.get());
+}
+
+
+TEST_CASE("Finally with class method resolve string void", "[finally]")
+{
+  test_struct test;
+  auto future = async::make_resolved_promise(str1).finally(&test_struct::string_void, &test).run();
+
+  std::string res;
+  REQUIRE_NOTHROW(res = future.get());
+  REQUIRE(res == str1);
+}
+
+
+TEST_CASE("Finally with class method reject void void", "[finally]")
+{
+  test_struct test;
+  auto future = async::make_rejected_promise(std::runtime_error{str1}).finally(&test_struct::void_void, &test).run();
+
+  REQUIRE_NOTHROW(future.get());
+}
+
+
+TEST_CASE("Finally with class method reject string void", "[finally]")
+{
+  test_struct test;
+  auto future = async::make_rejected_promise(std::runtime_error{str1}).finally(&test_struct::string_void, &test).run();
+
+  std::string res;
+  REQUIRE_NOTHROW(res = future.get());
+  REQUIRE(res == str1);
+}
+
+
+TEST_CASE("Finally with func resolve void void", "[finally]")
 {
   auto future = async::make_resolved_promise().finally(void_void).run();
 
@@ -33,7 +73,7 @@ TEST_CASE("Finally resolve void void", "[finally]")
 }
 
 
-TEST_CASE("Finally resolve string void", "[finally]")
+TEST_CASE("Finally with func resolve string void", "[finally]")
 {
   auto future = async::make_resolved_promise(str1).finally(string_void).run();
 
@@ -43,7 +83,7 @@ TEST_CASE("Finally resolve string void", "[finally]")
 }
 
 
-TEST_CASE("Finally reject void void", "[finally]")
+TEST_CASE("Finally with func reject void void", "[finally]")
 {
   auto future = async::make_rejected_promise(std::runtime_error{str1}).finally(void_void).run();
 
@@ -51,7 +91,7 @@ TEST_CASE("Finally reject void void", "[finally]")
 }
 
 
-TEST_CASE("Finally reject string void", "[finally]")
+TEST_CASE("Finally with func reject string void", "[finally]")
 {
   auto future = async::make_rejected_promise(std::runtime_error{str1}).finally(string_void).run();
 
