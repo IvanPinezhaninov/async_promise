@@ -22,9 +22,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 // local
-#include "test_funcs.h"
-
-static constexpr auto str = "Hello World!";
+#include "common.h"
 
 
 TEST_CASE("Finally resolve void void", "[finally]")
@@ -37,17 +35,17 @@ TEST_CASE("Finally resolve void void", "[finally]")
 
 TEST_CASE("Finally resolve string void", "[finally]")
 {
-  auto future = async::make_resolved_promise(str).finally(string_void).run();
+  auto future = async::make_resolved_promise(str1).finally(string_void).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
-  REQUIRE(res == str);
+  REQUIRE(res == str1);
 }
 
 
 TEST_CASE("Finally reject void void", "[finally]")
 {
-  auto future = async::make_rejected_promise(std::runtime_error{str}).finally(void_void).run();
+  auto future = async::make_rejected_promise(std::runtime_error{str1}).finally(void_void).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -55,9 +53,9 @@ TEST_CASE("Finally reject void void", "[finally]")
 
 TEST_CASE("Finally reject string void", "[finally]")
 {
-  auto future = async::make_rejected_promise(std::runtime_error{str}).finally(string_void).run();
+  auto future = async::make_rejected_promise(std::runtime_error{str1}).finally(string_void).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
-  REQUIRE(res == str);
+  REQUIRE(res == str1);
 }

@@ -22,14 +22,12 @@
 #include <catch2/catch_test_macros.hpp>
 
 // local
-#include "test_funcs.h"
-
-static constexpr auto str = "Hello World!";
+#include "common.h"
 
 
 TEST_CASE("Fail void void", "[fail]")
 {
-  auto future = async::make_rejected_promise(std::runtime_error{str}).fail(void_void).run();
+  auto future = async::make_rejected_promise(std::runtime_error{str1}).fail(void_void).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -37,7 +35,7 @@ TEST_CASE("Fail void void", "[fail]")
 
 TEST_CASE("Fail void exception", "[fail]")
 {
-  auto future = async::make_rejected_promise(std::runtime_error{str}).fail(void_exception).run();
+  auto future = async::make_rejected_promise(std::runtime_error{str1}).fail(void_exception).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -45,7 +43,7 @@ TEST_CASE("Fail void exception", "[fail]")
 
 TEST_CASE("Fail string void", "[fail]")
 {
-  auto future = async::make_rejected_promise<std::string>(std::runtime_error{str}).fail(string_void).run();
+  auto future = async::make_rejected_promise<std::string>(std::runtime_error{str1}).fail(string_void).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -53,7 +51,7 @@ TEST_CASE("Fail string void", "[fail]")
 
 TEST_CASE("Fail string exception", "[fail]")
 {
-  auto future = async::make_rejected_promise<std::string>(std::runtime_error{str}).fail(string_exception).run();
+  auto future = async::make_rejected_promise<std::string>(std::runtime_error{str1}).fail(string_exception).run();
 
   REQUIRE_NOTHROW(future.get());
 }

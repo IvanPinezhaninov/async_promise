@@ -22,12 +22,13 @@
 #include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-static constexpr auto str = "Hello World!";
+// local
+#include "common.h"
 
 
 TEST_CASE("Make rejected", "[make rejected promise]")
 {
-  auto future = async::make_rejected_promise(std::runtime_error{str}).run();
+  auto future = async::make_rejected_promise(std::runtime_error{str1}).run();
 
-  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str1));
 }

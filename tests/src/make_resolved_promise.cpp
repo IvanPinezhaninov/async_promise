@@ -21,7 +21,8 @@
 // catch2
 #include <catch2/catch_test_macros.hpp>
 
-static constexpr auto str = "Hello World!";
+// local
+#include "common.h"
 
 
 TEST_CASE("Make resolved void", "[make resolved promise]")
@@ -34,9 +35,9 @@ TEST_CASE("Make resolved void", "[make resolved promise]")
 
 TEST_CASE("Make resolved string", "[make resolved promise]")
 {
-  auto future = async::make_resolved_promise(str).run();
+  auto future = async::make_resolved_promise(str1).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
-  REQUIRE(res == str);
+  REQUIRE(res == str1);
 }
