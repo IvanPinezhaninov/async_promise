@@ -44,23 +44,22 @@ set(SOURCES
   src/all_settled.cpp
   src/all.cpp
   src/any.cpp
-  src/class_initial.cpp
-  src/class_then.cpp
   src/fail.cpp
   src/finally.cpp
-  src/func_initial.cpp
-  src/func_then.cpp
-  src/make_all_settled.cpp
-  src/make_all.cpp
-  src/make_any.cpp
-  src/make_race.cpp
-  src/make_rejected.cpp
-  src/make_resolved.cpp
+  src/initial.cpp
+  src/make_promise_all_settled.cpp
+  src/make_promise_all.cpp
+  src/make_promise_any.cpp
+  src/make_promise_race.cpp
+  src/make_promise.cpp
+  src/make_rejected_promise.cpp
+  src/make_resolved_promise.cpp
   src/race.cpp
   src/settled.cpp
   src/smoke.cpp
   src/test_funcs.cpp
   src/test_struct.cpp
+  src/then.cpp
 )
 
 set(TARGET async_promise_tests)

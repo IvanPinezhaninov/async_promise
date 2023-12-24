@@ -27,7 +27,7 @@
 #include "common.h"
 
 
-TEST_CASE("Make all void void", "[make all]")
+TEST_CASE("Make all void void", "[make promise all]")
 {
   std::vector<void(*)()> funcs
   {
@@ -41,7 +41,7 @@ TEST_CASE("Make all void void", "[make all]")
 }
 
 
-TEST_CASE("Make all error void void", "[make all]")
+TEST_CASE("Make all error void void", "[make promise all]")
 {
   std::vector<void(*)()> funcs
   {
@@ -55,7 +55,7 @@ TEST_CASE("Make all error void void", "[make all]")
 }
 
 
-TEST_CASE("Make all void string", "[make all]")
+TEST_CASE("Make all void string", "[make promise all]")
 {
   std::vector<void(*)(std::string)> funcs
   {
@@ -69,7 +69,7 @@ TEST_CASE("Make all void string", "[make all]")
 }
 
 
-TEST_CASE("Make all error void string", "[make all]")
+TEST_CASE("Make all error void string", "[make promise all]")
 {
   std::vector<void(*)(std::string)> funcs
   {
@@ -83,7 +83,7 @@ TEST_CASE("Make all error void string", "[make all]")
 }
 
 
-TEST_CASE("Make all string void", "[make all]")
+TEST_CASE("Make all string void", "[make promise all]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -99,7 +99,7 @@ TEST_CASE("Make all string void", "[make all]")
 }
 
 
-TEST_CASE("Make all error string void", "[make all]")
+TEST_CASE("Make all error string void", "[make promise all]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -115,7 +115,7 @@ TEST_CASE("Make all error string void", "[make all]")
 }
 
 
-TEST_CASE("Make all string string", "[make all]")
+TEST_CASE("Make all string string", "[make promise all]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
@@ -131,7 +131,7 @@ TEST_CASE("Make all string string", "[make all]")
 }
 
 
-TEST_CASE("Make all error string string", "[make all]")
+TEST_CASE("Make all error string string", "[make promise all]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {

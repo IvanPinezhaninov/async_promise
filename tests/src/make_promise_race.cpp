@@ -31,7 +31,7 @@
 #include "common.h"
 
 
-TEST_CASE("Make race void void", "[make race]")
+TEST_CASE("Make race void void", "[make promise race]")
 {
   std::vector<void(*)()> void_void
   {
@@ -45,7 +45,7 @@ TEST_CASE("Make race void void", "[make race]")
 }
 
 
-TEST_CASE("Make race error won void void", "[make race]")
+TEST_CASE("Make race error won void void", "[make promise race]")
 {
   std::vector<void(*)()> void_void
   {
@@ -59,7 +59,7 @@ TEST_CASE("Make race error won void void", "[make race]")
 }
 
 
-TEST_CASE("Make race error lose void void", "[make race]")
+TEST_CASE("Make race error lose void void", "[make promise race]")
 {
   std::vector<void(*)()> void_void
   {
@@ -73,7 +73,7 @@ TEST_CASE("Make race error lose void void", "[make race]")
 }
 
 
-TEST_CASE("Make race void string", "[make race]")
+TEST_CASE("Make race void string", "[make promise race]")
 {
   std::vector<void(*)(std::string)> void_str
   {
@@ -87,7 +87,7 @@ TEST_CASE("Make race void string", "[make race]")
 }
 
 
-TEST_CASE("Make race error won void string", "[make race]")
+TEST_CASE("Make race error won void string", "[make promise race]")
 {
   std::vector<void(*)(std::string)> void_str
   {
@@ -101,7 +101,7 @@ TEST_CASE("Make race error won void string", "[make race]")
 }
 
 
-TEST_CASE("Make race error lose void string", "[make race]")
+TEST_CASE("Make race error lose void string", "[make promise race]")
 {
   std::vector<void(*)(std::string)> void_str
   {
@@ -115,7 +115,7 @@ TEST_CASE("Make race error lose void string", "[make race]")
 }
 
 
-TEST_CASE("Make race string void", "[make race]")
+TEST_CASE("Make race string void", "[make promise race]")
 {
   std::vector<std::string(*)()> str_void
   {
@@ -131,7 +131,7 @@ TEST_CASE("Make race string void", "[make race]")
 }
 
 
-TEST_CASE("Make race error won string void", "[make race]")
+TEST_CASE("Make race error won string void", "[make promise race]")
 {
   std::vector<std::string(*)()> str_void
   {
@@ -147,7 +147,7 @@ TEST_CASE("Make race error won string void", "[make race]")
 }
 
 
-TEST_CASE("Make race error lose string void", "[make race]")
+TEST_CASE("Make race error lose string void", "[make promise race]")
 {
   std::vector<std::string(*)()> str_void
   {
@@ -163,7 +163,7 @@ TEST_CASE("Make race error lose string void", "[make race]")
 }
 
 
-TEST_CASE("Make race string string", "[make race]")
+TEST_CASE("Make race string string", "[make promise race]")
 {
   std::vector<std::string(*)(std::string)> str_str
   {
@@ -179,7 +179,7 @@ TEST_CASE("Make race string string", "[make race]")
 }
 
 
-TEST_CASE("Make race error won string string", "[make race]")
+TEST_CASE("Make race error won string string", "[make promise race]")
 {
   std::vector<std::string(*)(std::string)> str_str
   {
@@ -195,7 +195,7 @@ TEST_CASE("Make race error won string string", "[make race]")
 }
 
 
-TEST_CASE("Make race error lose string string", "[make race]")
+TEST_CASE("Make race error lose string string", "[make promise race]")
 {
   std::vector<std::string(*)(std::string)> str_str
   {

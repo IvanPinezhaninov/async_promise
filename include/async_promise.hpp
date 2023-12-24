@@ -2086,10 +2086,25 @@ class promise
 
 
 /**
- * @brief Make promise with an function to be called.
- *        Return promise object with a result or an error.
- * @param func - Function.
- * @param args - Function arguments.
+ * @brief Make a promise object with an initial class method.
+ * @param method - Method for call.
+ * @param obj - Object containing the required method.
+ * @param args - Optional arguments.
+ * @return Promise object.
+ */
+template<typename Method, typename Class, typename... Args,
+         typename Result = typename std::result_of<Method(Class*, Args...)>::type,
+         typename = typename std::enable_if<internal::is_invocable<Method, Class, Args...>::value>::type>
+static promise<Result> make_promise(Method&& method, Class* obj, Args&&... args)
+{
+  return promise<Result>{std::forward<Method>(method), obj, std::forward<Args>(args)...};
+}
+
+
+/**
+ * @brief Make a promise object with an initial function.
+ * @param func - Function or class method for call.
+ * @param args - Optional arguments.
  * @return Promise object.
  */
 template<typename Func, typename... Args,

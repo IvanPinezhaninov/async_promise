@@ -19,15 +19,24 @@
 #include <async_promise.hpp>
 
 // catch2
-#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 static constexpr auto str = "Hello World!";
 
 
-TEST_CASE("Make rejected", "[make rejected]")
+TEST_CASE("Make resolved void", "[make resolved promise]")
 {
-  auto future = async::make_rejected_promise(std::runtime_error{str}).run();
+  auto future = async::make_resolved_promise().run();
 
-  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str));
+  REQUIRE_NOTHROW(future.get());
+}
+
+
+TEST_CASE("Make resolved string", "[make resolved promise]")
+{
+  auto future = async::make_resolved_promise(str).run();
+
+  std::string res;
+  REQUIRE_NOTHROW(res = future.get());
+  REQUIRE(res == str);
 }

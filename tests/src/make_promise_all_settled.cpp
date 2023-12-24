@@ -26,7 +26,7 @@
 #include "common.h"
 
 
-TEST_CASE("Make all settled void void", "[make all setled]")
+TEST_CASE("Make all settled void void", "[make promise all settled]")
 {
   std::vector<void(*)()> funcs
   {
@@ -45,7 +45,7 @@ TEST_CASE("Make all settled void void", "[make all setled]")
 }
 
 
-TEST_CASE("Make all settled error void void", "[make all setled]")
+TEST_CASE("Make all settled error void void", "[make promise all settled]")
 {
   std::vector<void(*)()> funcs
   {
@@ -65,7 +65,7 @@ TEST_CASE("Make all settled error void void", "[make all setled]")
 }
 
 
-TEST_CASE("Make all settled void string", "[make all setled]")
+TEST_CASE("Make all settled void string", "[make promise all settled]")
 {
   std::vector<void(*)(std::string)> funcs
   {
@@ -84,7 +84,7 @@ TEST_CASE("Make all settled void string", "[make all setled]")
 }
 
 
-TEST_CASE("Make all settled error void string", "[make all setled]")
+TEST_CASE("Make all settled error void string", "[make promise all settled]")
 {
   std::vector<void(*)(std::string)> funcs
   {
@@ -104,7 +104,7 @@ TEST_CASE("Make all settled error void string", "[make all setled]")
 }
 
 
-TEST_CASE("Make all settled string void", "[make all setled]")
+TEST_CASE("Make all settled string void", "[make promise all settled]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -125,7 +125,7 @@ TEST_CASE("Make all settled string void", "[make all setled]")
 }
 
 
-TEST_CASE("Make all settled error string void", "[make all setled]")
+TEST_CASE("Make all settled error string void", "[make promise all settled]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -147,7 +147,7 @@ TEST_CASE("Make all settled error string void", "[make all setled]")
 }
 
 
-TEST_CASE("Make all settled string string", "[make all setled]")
+TEST_CASE("Make all settled string string", "[make promise all settled]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
@@ -168,7 +168,7 @@ TEST_CASE("Make all settled string string", "[make all setled]")
 }
 
 
-TEST_CASE("Make all settled error string string", "[make all setled]")
+TEST_CASE("Make all settled error string string", "[make promise all settled]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
