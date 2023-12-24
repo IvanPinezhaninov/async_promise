@@ -36,17 +36,20 @@ include(Catch)
 
 set(HEADERS
   src/common.h
-  src/funcs.h
+  src/test_funcs.h
+  src/test_struct.h
 )
 
 set(SOURCES
   src/all_settled.cpp
   src/all.cpp
   src/any.cpp
+  src/class_initial.cpp
+  src/class_then.cpp
   src/fail.cpp
   src/finally.cpp
-  src/funcs.cpp
-  src/initial.cpp
+  src/func_initial.cpp
+  src/func_then.cpp
   src/make_all_settled.cpp
   src/make_all.cpp
   src/make_any.cpp
@@ -56,7 +59,8 @@ set(SOURCES
   src/race.cpp
   src/settled.cpp
   src/smoke.cpp
-  src/then.cpp
+  src/test_funcs.cpp
+  src/test_struct.cpp
 )
 
 set(TARGET async_promise_tests)

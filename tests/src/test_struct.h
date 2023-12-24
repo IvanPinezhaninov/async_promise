@@ -15,31 +15,34 @@
 **
 ******************************************************************************/
 
-#ifndef FUNCS_H
-#define FUNCS_H
+#ifndef TEST_STRUCT_H
+#define TEST_STRUCT_H
 
 // stl
 #include <string>
 
 
-void void_void();
+struct test_struct final
+{
+  void void_void();
 
-void error_void_void();
+  void error_void_void();
 
-void void_string(std::string str);
+  void void_string(std::string str);
 
-void error_void_string(std::string str);
+  void error_void_string(std::string str);
 
-void void_exception(std::exception_ptr e);
+  void void_exception(std::exception_ptr e);
 
-std::string string_void();
+  std::string string_void();
 
-std::string error_string_void();
+  std::string error_string_void();
 
-std::string string_string(std::string str);
+  std::string string_string(std::string str);
 
-std::string error_string_string(std::string str);
+  std::string error_string_string(std::string str);
 
-std::string string_exception(std::exception_ptr e);
+  std::string string_exception(std::exception_ptr e);
+};
 
-#endif // FUNCS_H
+#endif // TEST_STRUCT_H

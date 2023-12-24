@@ -23,12 +23,12 @@
 #include <catch2/catch_test_macros.hpp>
 
 // local
-#include "funcs.h"
+#include "test_funcs.h"
 
 static constexpr auto str = "Hello World!";
 
 
-TEST_CASE("Then void void", "[then]")
+TEST_CASE("Func then void void", "[then]")
 {
   auto future = async::make_resolved_promise().then(void_void).run();
 
@@ -36,7 +36,7 @@ TEST_CASE("Then void void", "[then]")
 }
 
 
-TEST_CASE("Then error void void", "[then]")
+TEST_CASE("Func then error void void", "[then]")
 {
   auto future = async::make_resolved_promise().then(error_void_void).run();
 
@@ -44,7 +44,7 @@ TEST_CASE("Then error void void", "[then]")
 }
 
 
-TEST_CASE("Then void void ignore arg", "[then]")
+TEST_CASE("Func then void void ignore arg", "[then]")
 {
   auto future = async::make_resolved_promise(str).then(void_void).run();
 
@@ -52,7 +52,7 @@ TEST_CASE("Then void void ignore arg", "[then]")
 }
 
 
-TEST_CASE("Then error void void ignore arg", "[then]")
+TEST_CASE("Func then error void void ignore arg", "[then]")
 {
   auto future = async::make_resolved_promise(str).then(error_void_void).run();
 
@@ -60,7 +60,7 @@ TEST_CASE("Then error void void ignore arg", "[then]")
 }
 
 
-TEST_CASE("Then void string", "[then]")
+TEST_CASE("Func then void string", "[then]")
 {
   auto future = async::make_resolved_promise(str).then(void_string).run();
 
@@ -68,7 +68,7 @@ TEST_CASE("Then void string", "[then]")
 }
 
 
-TEST_CASE("Then error void string", "[then]")
+TEST_CASE("Func then error void string", "[then]")
 {
   auto future = async::make_resolved_promise(str).then(error_void_string).run();
 
@@ -76,7 +76,7 @@ TEST_CASE("Then error void string", "[then]")
 }
 
 
-TEST_CASE("Then string void", "[then]")
+TEST_CASE("Func then string void", "[then]")
 {
   auto future = async::make_resolved_promise().then(string_void).run();
 
@@ -86,7 +86,7 @@ TEST_CASE("Then string void", "[then]")
 }
 
 
-TEST_CASE("Then error string void", "[then]")
+TEST_CASE("Func then error string void", "[then]")
 {
   auto future = async::make_resolved_promise().then(error_string_void).run();
 
@@ -94,7 +94,7 @@ TEST_CASE("Then error string void", "[then]")
 }
 
 
-TEST_CASE("Then string void ignore arg", "[then]")
+TEST_CASE("Func then string void ignore arg", "[then]")
 {
   auto future = async::make_resolved_promise(str).then(string_void).run();
 
@@ -104,7 +104,7 @@ TEST_CASE("Then string void ignore arg", "[then]")
 }
 
 
-TEST_CASE("Then error string void ignore arg", "[then]")
+TEST_CASE("Func then error string void ignore arg", "[then]")
 {
   auto future = async::make_resolved_promise(str).then(error_string_void).run();
 
@@ -112,7 +112,7 @@ TEST_CASE("Then error string void ignore arg", "[then]")
 }
 
 
-TEST_CASE("Then string string", "[then]")
+TEST_CASE("Func then string string", "[then]")
 {
   auto future = async::make_resolved_promise(str).then(string_string).run();
 
@@ -122,7 +122,7 @@ TEST_CASE("Then string string", "[then]")
 }
 
 
-TEST_CASE("Then error string string", "[then]")
+TEST_CASE("Func then error string string", "[then]")
 {
   auto future = async::make_resolved_promise(str).then(error_string_string).run();
 

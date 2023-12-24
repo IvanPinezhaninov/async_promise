@@ -24,6 +24,7 @@
 #include <future>
 #include <memory>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 
@@ -234,23 +235,29 @@ auto apply(Func&& func, Tuple&& tuple) -> decltype(apply(std::forward<Func>(func
   return apply(std::forward<Func>(func), std::forward<Tuple>(tuple), Seq{});
 }
 
+
+template<typename Func, typename... Args>
+struct is_invocable :
+  std::is_constructible<std::function<void(Args...)>, std::reference_wrapper<typename std::remove_reference<Func>::type>>
+{};
+
 #else
 using std::apply;
+using std::is_invocable;
 #endif
 
 
 template<typename Result>
-class task
+struct task
 {
-  public:
-    task() = default;
-    task(const task&) = default;
-    task(task&&) = default;
-    task& operator=(const task&) = default;
-    task& operator=(task&&) = default;
-    virtual ~task() = default;
+  task() = default;
+  task(const task&) = default;
+  task(task&&) = default;
+  task& operator=(const task&) = default;
+  task& operator=(task&&) = default;
+  virtual ~task() = default;
 
-    virtual Result run() = 0;
+  virtual Result run() = 0;
 };
 
 
@@ -258,64 +265,140 @@ template<typename T>
 using task_ptr = std::shared_ptr<task<T>>;
 
 
-class promise_helper
+struct promise_helper
 {
-  public:
-    static void resolve(std::promise<void>& promise)
+  static void resolve(std::promise<void>& promise)
+  {
+    try
     {
-      try
-      {
-        promise.set_value();
-      }
-      catch(...)
-      {}
+      promise.set_value();
     }
+    catch(...)
+    {}
+  }
 
-    template<typename T, typename Value>
-    static void resolve(std::promise<T>& promise, Value&& val)
+  template<typename T, typename Value>
+  static void resolve(std::promise<T>& promise, Value&& val)
+  {
+    try
     {
-      try
-      {
-        promise.set_value(std::forward<Value>(val));
-      }
-      catch(...)
-      {}
+      promise.set_value(std::forward<Value>(val));
     }
+    catch(...)
+    {}
+  }
 
-    template<typename T>
-    static void reject(std::promise<T>& promise, std::exception_ptr err)
+  template<typename T>
+  static void reject(std::promise<T>& promise, std::exception_ptr err)
+  {
+    try
     {
-      try
-      {
-        promise.set_exception(std::move(err));
-      }
-      catch(...)
-      {}
+      promise.set_exception(std::move(err));
     }
+    catch(...)
+    {}
+  }
 };
 
 
-class vector_helper
+struct vector_helper
+{
+  template<typename T>
+  static void reserve(T&, std::size_t)
+  {}
+
+  template<typename T>
+  static void reserve(std::vector<T>& v, std::size_t n)
+  {
+    v.reserve(n);
+  }
+};
+
+
+template<typename T>
+struct class_method_call_helper
+{
+  template<typename Method, typename Class, typename Tuple>
+  T call(Method&& method, Class* obj, Tuple&& tpl)
+  {
+    using tuple_t = typename std::decay<Tuple>::type;
+    using impl_t = impl<Method, Class, Tuple, 0 == std::tuple_size<tuple_t>::value, std::tuple_size<tuple_t>::value>;
+    return impl_t::call(std::forward<Method>(method), obj, std::forward<Tuple>(tpl));
+  }
+
+  template<typename Method, typename Class, typename Tuple, bool Enough, int TotalArgs, int... N>
+  struct impl
+  {
+    static T call(Method&& method, Class* obj, Tuple&& tpl)
+    {
+      using impl_t = impl<Method, Class, Tuple, TotalArgs == 1 + sizeof...(N), TotalArgs, N..., sizeof...(N)>;
+      return impl_t::call(std::forward<Method>(method), obj, std::forward<Tuple>(tpl));
+    }
+  };
+
+  template<typename Method, typename Class, typename Tuple, int TotalArgs, int... N>
+  struct impl<Method, Class, Tuple, true, TotalArgs, N...>
+  {
+    static T call(Method&& method, Class* obj, Tuple&& tpl)
+    {
+      return (obj->*method)(std::get<N>(std::forward<Tuple>(tpl))...);
+    }
+  };
+};
+
+
+template<typename Result, typename Method, typename Class, typename... Args>
+class initial_class_task final : public task<Result>, public class_method_call_helper<Result>
 {
   public:
-    template<typename T>
-    static void reserve(T&, std::size_t)
+    template<typename Method_, typename... Args_>
+    explicit initial_class_task(Method_&& method, Class* obj, Args_&&... args)
+      : m_method{std::forward<Method_>(method)}
+      , m_obj{obj}
+      , m_args{std::forward<Args_>(args)...}
     {}
 
-    template<typename T>
-    static void reserve(std::vector<T>& v, std::size_t n)
+    Result run() final
     {
-      v.reserve(n);
+      return this->call(m_method, m_obj, m_args);
     }
+
+  private:
+    Method m_method;
+    Class* const m_obj;
+    std::tuple<Args...> m_args;
+};
+
+
+template<typename Method, typename Class, typename... Args>
+class initial_class_task<void, Method, Class, Args...> final : public task<void>, public class_method_call_helper<void>
+{
+  public:
+    template<typename Method_, typename... Args_>
+    explicit initial_class_task(Method_&& method, Class* obj, Args_&&... args)
+      : m_method{std::forward<Method_>(method)}
+      , m_obj{obj}
+      , m_args{std::forward<Args_>(args)...}
+    {}
+
+    void run() final
+    {
+      this->call(m_method, m_obj, m_args);
+    }
+
+  private:
+    Method m_method;
+    Class* const m_obj;
+    std::tuple<Args...> m_args;
 };
 
 
 template<typename Result, typename Func, typename... Args>
-class initial_task final : public task<Result>
+class initial_func_task final : public task<Result>
 {
   public:
     template<typename Func_, typename... Args_>
-    explicit initial_task(Func_&& func, Args_&&... args)
+    explicit initial_func_task(Func_&& func, Args_&&... args)
       : m_func{std::forward<Func_>(func)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -332,11 +415,11 @@ class initial_task final : public task<Result>
 
 
 template<typename Func, typename... Args>
-class initial_task<void, Func, Args...> final : public task<void>
+class initial_func_task<void, Func, Args...> final : public task<void>
 {
   public:
     template<typename Func_, typename... Args_>
-    explicit initial_task(Func_&& func, Args_&&... args)
+    explicit initial_func_task(Func_&& func, Args_&&... args)
       : m_func{std::forward<Func_>(func)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -365,12 +448,57 @@ class next_task : public task<Result>
 };
 
 
+template<typename Result, typename ParentResult, typename Method, typename Class>
+class then_class_task final : public next_task<Result, ParentResult>
+{
+  public:
+    template<typename Method_>
+    then_class_task(task_ptr<ParentResult> parent, Method_&& method, Class* obj)
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_method{std::forward<Method_>(method)}
+      , m_obj{obj}
+    {}
+
+    Result run() final
+    {
+      return (m_obj->*m_method)(this->m_parent->run());
+    }
+
+  private:
+    Method m_method;
+    Class* const m_obj;
+};
+
+
+template<typename Result, typename ParentResult, typename Method, typename Class>
+class then_class_task_void final : public next_task<Result, ParentResult>
+{
+public:
+    template<typename Method_>
+    then_class_task_void(task_ptr<ParentResult> parent, Method_&& method, Class* obj)
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_method{std::forward<Method_>(method)}
+      , m_obj{obj}
+    {}
+
+    Result run() final
+    {
+      this->m_parent->run();
+      return (m_obj->*m_method)();
+    }
+
+private:
+    Method m_method;
+    Class* const m_obj;
+};
+
+
 template<typename Result, typename ParentResult, typename Func>
-class then_task final : public next_task<Result, ParentResult>
+class then_func_task final : public next_task<Result, ParentResult>
 {
   public:
     template<typename T>
-    then_task(task_ptr<ParentResult> parent, T&& func)
+    then_func_task(task_ptr<ParentResult> parent, T&& func)
       : next_task<Result, ParentResult>{std::move(parent)}
       , m_func{std::forward<T>(func)}
     {}
@@ -386,11 +514,11 @@ class then_task final : public next_task<Result, ParentResult>
 
 
 template<typename Result, typename ParentResult, typename Func>
-class then_task_void final : public next_task<Result, ParentResult>
+class then_func_task_void final : public next_task<Result, ParentResult>
 {
   public:
     template<typename T>
-    then_task_void(task_ptr<ParentResult> parent, T&& func)
+    then_func_task_void(task_ptr<ParentResult> parent, T&& func)
       : next_task<Result, ParentResult>{std::move(parent)}
       , m_func{std::forward<T>(func)}
     {}
@@ -1599,11 +1727,26 @@ class promise
 
 
     /**
+     * @brief Constructor to create a promise object with an initial class method.
+     * @param method - Method for call.
+     * @param obj - Object containing the required method.
+     * @param args - Optional function arguments.
+     */
+    template<typename Method, typename Class, typename... Args,
+             typename task = internal::initial_class_task<T, Method, Class, Args...>,
+             typename = typename std::enable_if<internal::is_invocable<Method, Class, Args...>::value>::type>
+    explicit promise(Method&& method, Class* obj, Args&&... args)
+      : m_task{std::make_shared<task>(std::forward<Method>(method), obj, std::forward<Args>(args)...)}
+    {};
+
+
+    /**
      * @brief Constructor to create a promise object with an initial function.
      * @param func - Initial function.
      * @param args - Optional function arguments.
      */
-    template<typename Func, typename... Args, typename task = internal::initial_task<T, Func, Args...>>
+    template<typename Func, typename... Args,
+             typename task = internal::initial_func_task<T, Func, Args...>>
     explicit promise(Func&& func, Args&&... args)
       : m_task{std::make_shared<task>(std::forward<Func>(func), std::forward<Args>(args)...)}
     {};
@@ -1621,8 +1764,50 @@ class promise
 
 
     /**
+     * @brief Add a class method to be called if the previous function was resolved.
+     * @param method - Method that not receives any result of the previous call.
+     * @param obj - Object containing the required method.
+     * @return Promise object.
+     */
+    template<typename Method, typename Class, typename Result = typename std::result_of<Method(Class*)>::type>
+    promise<Result> then(Method&& method, Class* obj) const
+    {
+      using task = internal::then_class_task_void<Result, T, Method, Class>;
+      return promise<Result>{std::make_shared<task>(m_task, std::forward<Method>(method), obj)};
+    }
+
+
+    /**
+     * @brief Add a class method to be called if the previous function was resolved.
+     * @param method - Method that receives the result of the previous call.
+     * @param obj - Object containing the required method.
+     * @return Promise object.
+     */
+    template<typename Method, typename Class, typename Arg = T,
+             typename Result = typename std::result_of<Method(Class*, Arg)>::type>
+    promise<Result> then(Method&& method, Class* obj) const
+    {
+      using task = internal::then_class_task<Result, T, Method, Class>;
+      return promise<Result>{std::make_shared<task>(m_task, std::forward<Method>(method), obj)};
+    }
+
+
+    /**
      * @brief Add a function to be called if the previous function was resolved.
-     * @param func - Function that receives the result of the previous function.
+     * @param func - Function that not receives any result of the previous call.
+     * @return Promise object.
+     */
+    template<typename Func, typename Result = typename std::result_of<Func()>::type>
+    promise<Result> then(Func&& func) const
+    {
+      using task = internal::then_func_task_void<Result, T, Func>;
+      return promise<Result>{std::make_shared<task>(m_task, std::forward<Func>(func))};
+    }
+
+
+    /**
+     * @brief Add a function to be called if the previous function was resolved.
+     * @param func - Function that receives the result of the previous call.
      * @return Promise object.
      */
     template<typename Func, typename Arg = T,
@@ -1630,20 +1815,7 @@ class promise
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type>
     promise<Result> then(Func&& func) const
     {
-      using task = internal::then_task<Result, T, Func>;
-      return promise<Result>{std::make_shared<task>(m_task, std::forward<Func>(func))};
-    }
-
-
-    /**
-     * @brief Add a function to be called if the previous function was resolved.
-     * @param func - Function that not receives any result of the previous function.
-     * @return Promise object.
-     */
-    template<typename Func, typename Result = typename std::result_of<Func()>::type>
-    promise<Result> then(Func&& func) const
-    {
-      using task = internal::then_task_void<Result, T, Func>;
+      using task = internal::then_func_task<Result, T, Func>;
       return promise<Result>{std::make_shared<task>(m_task, std::forward<Func>(func))};
     }
 

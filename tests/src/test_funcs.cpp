@@ -2,7 +2,7 @@
 #include <stdexcept>
 
 // local
-#include "funcs.h"
+#include "test_funcs.h"
 
 static constexpr auto str = "Hello World!";
 

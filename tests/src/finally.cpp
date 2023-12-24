@@ -22,7 +22,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 // local
-#include "funcs.h"
+#include "test_funcs.h"
 
 static constexpr auto str = "Hello World!";
 

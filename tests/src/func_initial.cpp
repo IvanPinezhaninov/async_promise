@@ -23,12 +23,12 @@
 #include <catch2/catch_test_macros.hpp>
 
 // local
-#include "funcs.h"
+#include "test_funcs.h"
 
 static constexpr auto str = "Hello World!";
 
 
-TEST_CASE("Initial void void", "[initial]")
+TEST_CASE("Func initial void void", "[initial]")
 {
   auto future = async::promise<void>{void_void}.run();
 
@@ -36,7 +36,7 @@ TEST_CASE("Initial void void", "[initial]")
 }
 
 
-TEST_CASE("Initial error void void", "[initial]")
+TEST_CASE("Func initial error void void", "[initial]")
 {
   auto future = async::promise<void>{error_void_void}.run();
 
@@ -44,7 +44,7 @@ TEST_CASE("Initial error void void", "[initial]")
 }
 
 
-TEST_CASE("Initial void string", "[initial]")
+TEST_CASE("Func initial void string", "[initial]")
 {
     auto future = async::promise<void>{void_string, str}.run();
 
@@ -52,7 +52,7 @@ TEST_CASE("Initial void string", "[initial]")
 }
 
 
-TEST_CASE("Initial error void string", "[initial]")
+TEST_CASE("Func initial error void string", "[initial]")
 {
   auto future = async::promise<void>{error_void_string, str}.run();
 
@@ -60,7 +60,7 @@ TEST_CASE("Initial error void string", "[initial]")
 }
 
 
-TEST_CASE("Initial string void", "[initial]")
+TEST_CASE("Func initial string void", "[initial]")
 {
   auto future = async::promise<std::string>{string_void}.run();
 
@@ -70,7 +70,7 @@ TEST_CASE("Initial string void", "[initial]")
 }
 
 
-TEST_CASE("Initial error string void", "[initial]")
+TEST_CASE("Func initial error string void", "[initial]")
 {
   auto future = async::promise<std::string>{error_string_void}.run();
 
@@ -78,7 +78,7 @@ TEST_CASE("Initial error string void", "[initial]")
 }
 
 
-TEST_CASE("Initial string string", "[initial]")
+TEST_CASE("Func initial string string", "[initial]")
 {
   auto future = async::promise<std::string>{string_string, str}.run();
 
@@ -88,7 +88,7 @@ TEST_CASE("Initial string string", "[initial]")
 }
 
 
-TEST_CASE("Initial error string string", "[initial]")
+TEST_CASE("Func initial error string string", "[initial]")
 {
   auto future = async::promise<std::string>{error_string_string, str}.run();
 
