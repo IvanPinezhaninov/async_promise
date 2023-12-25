@@ -16,6 +16,7 @@
 ******************************************************************************/
 
 // stl
+#include <list>
 #include <numeric>
 
 // async_promise
@@ -146,6 +147,28 @@ TEST_CASE("Smoke all no arg", "[smoke]")
 }
 
 
+TEST_CASE("Smoke all with list", "[smoke]")
+{
+  std::list<int(*)(int)> funcs
+  {
+    [] (int val) { return val + 3; },
+    [] (int val) { return val + 4; },
+    [] (int val) { return val + 5; },
+  };
+
+  auto future = async::make_resolved_promise(1)
+                .then([] (int val) { return val + 2; })
+                .all(funcs)
+                .then([] (const std::list<int>& v) { return sum(v); })
+                .run();
+
+  auto res = 0;
+  REQUIRE_NOTHROW(res = future.get());
+  static constexpr auto exp = (1 + 2 + 3) + (1 + 2 + 4) + (1 + 2 + 5);
+  REQUIRE(res == exp);
+}
+
+
 TEST_CASE("Smoke all settled", "[smoke]")
 {
   std::vector<int(*)(int)> funcs
@@ -186,6 +209,28 @@ TEST_CASE("Smoke all settled no arg", "[smoke]")
   auto res = 0;
   REQUIRE_NOTHROW(res = future.get());
   static constexpr auto exp = 3 + 4 + 5;
+  REQUIRE(res == exp);
+}
+
+
+TEST_CASE("Smoke all settled with list", "[smoke]")
+{
+  std::list<int(*)(int)> funcs
+  {
+    [] (int val) { return val + 3; },
+    [] (int val) { return val + 4; },
+    [] (int val) { return val + 5; },
+  };
+
+  auto future = async::make_resolved_promise(1)
+                .then([] (int val) { return val + 2; })
+                .all_settled(funcs)
+                .then([] (const std::list<async::settled<int>>& v) { return sum_settled(v); })
+                .run();
+
+  auto res = 0;
+  REQUIRE_NOTHROW(res = future.get());
+  static constexpr auto exp = (1 + 2 + 3) + (1 + 2 + 4) + (1 + 2 + 5);
   REQUIRE(res == exp);
 }
 
@@ -234,6 +279,28 @@ TEST_CASE("Smoke any no arg", "[smoke]")
 }
 
 
+TEST_CASE("Smoke any with list", "[smoke]")
+{
+  std::list<int(*)(int)> funcs
+  {
+    [] (int val) { return val + 3; },
+    [] (int val) { return val + 3; },
+    [] (int val) { return val + 3; },
+  };
+
+  auto future = async::make_resolved_promise(1)
+                .then([] (int val) { return val + 2; })
+                .any(funcs)
+                .then([] (int val) { return val + 4; })
+                .run();
+
+  auto res = 0;
+  REQUIRE_NOTHROW(res = future.get());
+  static constexpr auto exp = 1 + 2 + 3 + 4;
+  REQUIRE(res == exp);
+}
+
+
 TEST_CASE("Smoke race", "[smoke]")
 {
   std::vector<int(*)(int)> funcs
@@ -278,7 +345,29 @@ TEST_CASE("Smoke race no arg", "[smoke]")
 }
 
 
-TEST_CASE("Smoke static all", "[smoke]")
+TEST_CASE("Smoke race with list", "[smoke]")
+{
+  std::list<int(*)(int)> funcs
+  {
+    [] (int val) { return val + 3; },
+    [] (int val) { return val + 3; },
+    [] (int val) { return val + 3; },
+  };
+
+  auto future = async::make_resolved_promise(1)
+                .then([] (int val) { return val + 2; })
+                .race(funcs)
+                .then([] (int val) { return val + 4; })
+                .run();
+
+  auto res = 0;
+  REQUIRE_NOTHROW(res = future.get());
+  static constexpr auto exp = 1 + 2 + 3 + 4;
+  REQUIRE(res == exp);
+}
+
+
+TEST_CASE("Smoke make promise all", "[smoke]")
 {
   std::vector<int(*)(int, int, int)> funcs
   {
@@ -299,7 +388,7 @@ TEST_CASE("Smoke static all", "[smoke]")
 }
 
 
-TEST_CASE("Smoke static all no args", "[smoke]")
+TEST_CASE("Smoke make promise all no args", "[smoke]")
 {
   std::vector<int(*)()> funcs
   {
@@ -320,7 +409,28 @@ TEST_CASE("Smoke static all no args", "[smoke]")
 }
 
 
-TEST_CASE("Smoke static all settled", "[smoke]")
+TEST_CASE("Smoke make promise all with list", "[smoke]")
+{
+  std::list<int(*)(int, int, int)> funcs
+  {
+    [] (int val1, int val2, int val3) { return val1 + val2 + val3 + 4; },
+    [] (int val1, int val2, int val3) { return val1 + val2 + val3 + 5; },
+    [] (int val1, int val2, int val3) { return val1 + val2 + val3 + 6; },
+  };
+
+  auto future = async::make_promise_all(funcs, 1, 2, 3)
+                .then([] (const std::list<int>& v) { return sum(v); })
+                .then([] (int val) { return val + 7; })
+                .run();
+
+  auto res = 0;
+  REQUIRE_NOTHROW(res = future.get());
+  static constexpr auto exp = (1 + 2 + 3 + 4) + (1 + 2 + 3 + 5) + (1 + 2 + 3 + 6) + 7;
+  REQUIRE(res == exp);
+}
+
+
+TEST_CASE("Smoke make promise all settled", "[smoke]")
 {
   std::vector<int(*)(int, int, int)> funcs
   {
@@ -341,7 +451,7 @@ TEST_CASE("Smoke static all settled", "[smoke]")
 }
 
 
-TEST_CASE("Smoke static all settled no args", "[smoke]")
+TEST_CASE("Smoke make promise all settled no args", "[smoke]")
 {
   std::vector<int(*)()> funcs
   {
@@ -362,7 +472,28 @@ TEST_CASE("Smoke static all settled no args", "[smoke]")
 }
 
 
-TEST_CASE("Smoke static any", "[smoke]")
+TEST_CASE("Smoke make promise all settled with list", "[smoke]")
+{
+  std::list<int(*)(int, int, int)> funcs
+  {
+    [] (int val1, int val2, int val3) { return val1 + val2 + val3 + 4; },
+    [] (int val1, int val2, int val3) { return val1 + val2 + val3 + 5; },
+    [] (int val1, int val2, int val3) { return val1 + val2 + val3 + 6; },
+  };
+
+  auto future = async::make_promise_all_settled(funcs, 1, 2, 3)
+                .then([] (const std::list<async::settled<int>>& v) { return sum_settled(v); })
+                .then([] (int val) { return val + 7; })
+                .run();
+
+  auto res = 0;
+  REQUIRE_NOTHROW(res = future.get());
+  static constexpr auto exp = (1 + 2 + 3 + 4) + (1 + 2 + 3 + 5) + (1 + 2 + 3 + 6) + 7;
+  REQUIRE(res == exp);
+}
+
+
+TEST_CASE("Smoke make promise any", "[smoke]")
 {
   std::vector<int(*)(int, int, int)> funcs
   {
@@ -382,7 +513,7 @@ TEST_CASE("Smoke static any", "[smoke]")
 }
 
 
-TEST_CASE("Smoke static any no args", "[smoke]")
+TEST_CASE("Smoke make promise any no args", "[smoke]")
 {
   std::vector<int(*)()> funcs
   {
@@ -402,7 +533,27 @@ TEST_CASE("Smoke static any no args", "[smoke]")
 }
 
 
-TEST_CASE("Smoke static race", "[smoke]")
+TEST_CASE("Smoke make promise any with list", "[smoke]")
+{
+  std::list<int(*)(int, int, int)> funcs
+  {
+    [] (int val1, int val2, int val3) { return val1 + val2 + val3 + 4; },
+    [] (int val1, int val2, int val3) { return val1 + val2 + val3 + 4; },
+    [] (int val1, int val2, int val3) { return val1 + val2 + val3 + 4; },
+  };
+
+  auto future = async::make_promise_any(funcs, 1, 2, 3)
+                .then([] (int val) { return val + 5; })
+                .run();
+
+  auto res = 0;
+  REQUIRE_NOTHROW(res = future.get());
+  static constexpr auto exp = (1 + 2 + 3 + 4) + 5;
+  REQUIRE(res == exp);
+}
+
+
+TEST_CASE("Smoke make promise race", "[smoke]")
 {
   std::vector<int(*)(int, int, int)> funcs
   {
@@ -422,7 +573,7 @@ TEST_CASE("Smoke static race", "[smoke]")
 }
 
 
-TEST_CASE("Smoke static race no args", "[smoke]")
+TEST_CASE("Smoke make promise race no args", "[smoke]")
 {
   std::vector<int(*)()> funcs
   {
@@ -438,5 +589,25 @@ TEST_CASE("Smoke static race no args", "[smoke]")
   auto res = 0;
   REQUIRE_NOTHROW(res = future.get());
   static constexpr auto exp = 1 + 2;
+  REQUIRE(res == exp);
+}
+
+
+TEST_CASE("Smoke make promise race with list", "[smoke]")
+{
+  std::list<int(*)(int, int, int)> funcs
+  {
+    [] (int val1, int val2, int val3) { return val1 + val2 + val3 + 4; },
+    [] (int val1, int val2, int val3) { return val1 + val2 + val3 + 4; },
+    [] (int val1, int val2, int val3) { return val1 + val2 + val3 + 4; },
+  };
+
+  auto future = async::make_promise_race(funcs, 1, 2, 3)
+                .then([] (int val) { return val + 5; })
+                .run();
+
+  auto res = 0;
+  REQUIRE_NOTHROW(res = future.get());
+  static constexpr auto exp = (1 + 2 + 3 + 4) + 5;
   REQUIRE(res == exp);
 }
