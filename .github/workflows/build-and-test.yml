@@ -47,7 +47,7 @@ jobs:
             c_compiler: cl
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
@@ -89,5 +89,7 @@ jobs:
     - name: Upload coverage reports to Codecov
       if: ${{ success() && 'ubuntu-latest' == matrix.os && 'g++' == matrix.cpp_compiler }}
       uses: codecov/codecov-action@v3
+      with:
+        functionalities: fixes
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
