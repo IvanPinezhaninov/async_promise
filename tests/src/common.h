@@ -18,11 +18,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include "constants.h"
 #include "test_funcs.h"
 #include "test_struct.h"
-
-static constexpr auto aggregate_error_message = "All functions rejected";
-static constexpr auto str1 = "Hello World!";
-static constexpr auto str2 = "Hello Universe!";
 
 #endif // COMMON_H

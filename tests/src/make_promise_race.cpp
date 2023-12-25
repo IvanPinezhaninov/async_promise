@@ -49,13 +49,13 @@ TEST_CASE("Make race error won void void", "[make promise race]")
 {
   std::vector<void(*)()> void_void
   {
-    [] () { throw std::runtime_error{str1}; },
+    [] () { throw std::runtime_error{str2}; },
     [] () { std::this_thread::sleep_for(std::chrono::milliseconds(100)); },
   };
 
   auto future = async::make_promise_race(void_void).run();
 
-  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
@@ -91,13 +91,13 @@ TEST_CASE("Make race error won void string", "[make promise race]")
 {
   std::vector<void(*)(std::string)> void_str
   {
-    [] (std::string) { throw std::runtime_error{str1}; },
+    [] (std::string) { throw std::runtime_error{str2}; },
     [] (std::string) { std::this_thread::sleep_for(std::chrono::milliseconds(100)); },
   };
 
   auto future = async::make_promise_race(void_str, str1).run();
 
-  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
@@ -135,14 +135,14 @@ TEST_CASE("Make race error won string void", "[make promise race]")
 {
   std::vector<std::string(*)()> str_void
   {
-    [] () -> std::string { throw std::runtime_error{str1}; },
-    [] () { std::this_thread::sleep_for(std::chrono::milliseconds(100)); return std::string{str2}; },
+    [] () -> std::string { throw std::runtime_error{str2}; },
+    [] () { std::this_thread::sleep_for(std::chrono::milliseconds(100)); return std::string{str1}; },
   };
 
   auto future = async::make_promise_race(str_void).run();
 
   std::string res;
-  REQUIRE_THROWS_MATCHES(res = future.get(), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(res = future.get(), std::runtime_error, Catch::Matchers::Message(str2));
   REQUIRE(res.empty());
 }
 
@@ -183,14 +183,14 @@ TEST_CASE("Make race error won string string", "[make promise race]")
 {
   std::vector<std::string(*)(std::string)> str_str
   {
-    [] (std::string str) -> std::string { throw std::runtime_error{str1}; },
-    [] (std::string str) { std::this_thread::sleep_for(std::chrono::milliseconds(100)); return std::string{str2}; },
+    [] (std::string str) -> std::string { throw std::runtime_error{str2}; },
+    [] (std::string str) { std::this_thread::sleep_for(std::chrono::milliseconds(100)); return std::string{str1}; },
   };
 
   auto future = async::make_promise_race(str_str, str1).run();
 
   std::string res;
-  REQUIRE_THROWS_MATCHES(res = future.get(), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(res = future.get(), std::runtime_error, Catch::Matchers::Message(str2));
   REQUIRE(res.empty());
 }
 

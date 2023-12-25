@@ -2,60 +2,65 @@
 #include <stdexcept>
 
 // local
+#include "constants.h"
 #include "test_struct.h"
 
-static constexpr auto str = "Hello World!";
 
-
-void test_struct::void_void()
+void test_struct::void_void() const
 {}
 
 
-void test_struct::error_void_void()
+void test_struct::error_void_void() const
 {
-  throw std::runtime_error{str};
+  throw std::runtime_error{str2};
 }
 
 
-void test_struct::void_string(std::string str)
+void test_struct::void_string(std::string str) const
 {}
 
 
-void test_struct::error_void_string(std::string str)
+void test_struct::error_void_string(std::string str) const
 {
-  throw std::runtime_error{str};
+  throw std::runtime_error{str2};
 }
 
 
-void test_struct::void_exception(std::exception_ptr e)
+void test_struct::void_exception(std::exception_ptr e) const
 {}
 
 
-std::string test_struct::string_void()
+std::string test_struct::string_void1() const
+{
+  return str1;
+}
+
+
+std::string test_struct::string_void2() const
+{
+  return str2;
+}
+
+
+std::string test_struct::error_string_void() const
+{
+  throw std::runtime_error{str2};
+}
+
+
+std::string test_struct::string_string(std::string str) const
 {
   return str;
 }
 
 
-std::string test_struct::error_string_void()
+std::string test_struct::error_string_string(std::string str) const
 {
-  throw std::runtime_error{str};
+  throw std::runtime_error{str2};
 }
 
 
-std::string test_struct::string_string(std::string str)
-{
-  return str;
-}
-
-
-std::string test_struct::error_string_string(std::string str)
-{
-  throw std::runtime_error{str};
-}
-
-
-std::string test_struct::string_exception(std::exception_ptr e)
+std::string test_struct::string_exception(std::exception_ptr e) const
 {
   try
   {
@@ -67,6 +72,6 @@ std::string test_struct::string_exception(std::exception_ptr e)
   }
   catch(...)
   {
-    return str;
+    return str1;
   }
 }

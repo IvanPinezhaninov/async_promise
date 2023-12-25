@@ -36,6 +36,7 @@ include(Catch)
 
 set(HEADERS
   src/common.h
+  src/constants.h
   src/test_funcs.h
   src/test_struct.h
 )

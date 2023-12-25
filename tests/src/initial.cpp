@@ -40,7 +40,7 @@ TEST_CASE("Initial with class method error void void", "[initial]")
   test_struct test;
   auto future = async::promise<void>{&test_struct::error_void_void, &test}.run();
 
-  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
@@ -58,14 +58,14 @@ TEST_CASE("Initial with class method error void string", "[initial]")
   test_struct test;
   auto future = async::promise<void>{&test_struct::error_void_string, &test, str1}.run();
 
-  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
 TEST_CASE("Initial with class method string void", "[initial]")
 {
   test_struct test;
-  auto future = async::promise<std::string>{&test_struct::string_void, &test}.run();
+  auto future = async::promise<std::string>{&test_struct::string_void1, &test}.run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -78,7 +78,7 @@ TEST_CASE("Initial with class method error string void", "[initial]")
   test_struct test;
   auto future = async::promise<std::string>{&test_struct::error_string_void, &test}.run();
 
-  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
@@ -98,7 +98,7 @@ TEST_CASE("Initial with class method error string string", "[initial]")
   test_struct test;
   auto future = async::promise<std::string>{&test_struct::error_string_string, &test, str1}.run();
 
-  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
@@ -114,7 +114,7 @@ TEST_CASE("Initial with func error void void", "[initial]")
 {
   auto future = async::promise<void>{error_void_void}.run();
 
-  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
@@ -130,7 +130,7 @@ TEST_CASE("Initial with func error void string", "[initial]")
 {
   auto future = async::promise<void>{error_void_string, str1}.run();
 
-  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
@@ -148,7 +148,7 @@ TEST_CASE("Initial with func error string void", "[initial]")
 {
   auto future = async::promise<std::string>{error_string_void}.run();
 
-  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
@@ -166,6 +166,6 @@ TEST_CASE("Initial with func error string string", "[initial]")
 {
   auto future = async::promise<std::string>{error_string_string, str1}.run();
 
-  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
 }
 

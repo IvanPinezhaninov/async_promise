@@ -45,7 +45,7 @@ TEST_CASE("Any error void void", "[any]")
 {
   std::vector<void(*)()> funcs
   {
-    [] () { throw std::runtime_error{str1}; },
+    [] () { throw std::runtime_error{str2}; },
     [] () {},
   };
 
@@ -87,7 +87,7 @@ TEST_CASE("Any error void string", "[any]")
 {
   std::vector<void(*)(std::string)> funcs
   {
-    [] (std::string) { throw std::runtime_error{str1}; },
+    [] (std::string) { throw std::runtime_error{str2}; },
     [] (std::string) {},
   };
 
@@ -147,15 +147,15 @@ TEST_CASE("Any error string void", "[any]")
 {
   std::vector<std::string(*)()> funcs
   {
-    [] () -> std::string { throw std::runtime_error{str1}; },
-    [] () { return std::string{str2}; },
+    [] () -> std::string { throw std::runtime_error{str2}; },
+    [] () { return std::string{str1}; },
   };
 
   auto future = async::make_resolved_promise().any(funcs).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
-  REQUIRE(res == str2);
+  REQUIRE(res == str1);
 }
 
 
@@ -192,15 +192,15 @@ TEST_CASE("Any error string string", "[any]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
-    [] (std::string str) -> std::string { throw std::runtime_error{str1}; },
-    [] (std::string str) { return std::string{str2}; },
+    [] (std::string str) -> std::string { throw std::runtime_error{str2}; },
+    [] (std::string str) { return std::string{str1}; },
   };
 
   auto future = async::make_resolved_promise(str1).any(funcs).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
-  REQUIRE(res == str2);
+  REQUIRE(res == str1);
 }
 
 

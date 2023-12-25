@@ -47,7 +47,7 @@ TEST_CASE("Make any error void void", "[make promise any]")
 {
   std::vector<void(*)()> funcs
   {
-    [] () { throw std::runtime_error{str1}; },
+    [] () { throw std::runtime_error{str2}; },
     [] () {},
   };
 
@@ -89,7 +89,7 @@ TEST_CASE("Make any error void string", "[make promise any]")
 {
   std::vector<void(*)(std::string)> funcs
   {
-    [] (std::string) { throw std::runtime_error{str1}; },
+    [] (std::string) { throw std::runtime_error{str2}; },
     [] (std::string) {},
   };
 
@@ -133,15 +133,15 @@ TEST_CASE("Make any error string void", "[make promise any]")
 {
   std::vector<std::string(*)()> funcs
   {
-    [] () -> std::string { throw std::runtime_error{str1}; },
-    [] () { return std::string{str2}; },
+    [] () -> std::string { throw std::runtime_error{str2}; },
+    [] () { return std::string{str1}; },
   };
 
   auto future = async::make_promise_any(funcs).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
-  REQUIRE(res == str2);
+  REQUIRE(res == str1);
 }
 
 
@@ -178,15 +178,15 @@ TEST_CASE("Make any error string string", "[make promise any]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
-    [] (std::string str) -> std::string { throw std::runtime_error{str}; },
-    [] (std::string str) { return std::string{str2}; },
+    [] (std::string str) -> std::string { throw std::runtime_error{str2}; },
+    [] (std::string str) { return std::string{str1}; },
   };
 
   auto future = async::make_promise_any(funcs, str1).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
-  REQUIRE(res == str2);
+  REQUIRE(res == str1);
 }
 
 
@@ -194,8 +194,8 @@ TEST_CASE("Make any all error string string", "[make promise any]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
-    [] (std::string str) -> std::string { throw std::runtime_error{str}; },
-    [] (std::string str) -> std::string { throw std::runtime_error{str}; },
+    [] (std::string str) -> std::string { throw std::runtime_error{str1}; },
+    [] (std::string str) -> std::string { throw std::runtime_error{str2}; },
   };
 
   auto future = async::make_promise_any(funcs, str1).run();

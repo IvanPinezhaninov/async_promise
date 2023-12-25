@@ -27,7 +27,143 @@
 #include "common.h"
 
 
-TEST_CASE("Make all void void", "[make promise all]")
+TEST_CASE("Make all with class methods void void", "[make promise all]")
+{
+  test_struct test;
+
+  std::vector<void(test_struct::*)() const> methods
+  {
+    &test_struct::void_void,
+    &test_struct::void_void,
+  };
+
+  auto future = async::make_promise_all(methods, &test).run();
+
+  REQUIRE_NOTHROW(future.get());
+}
+
+
+TEST_CASE("Make all with class methods error void void", "[make promise all]")
+{
+  test_struct test;
+
+  std::vector<void(test_struct::*)() const> methods
+  {
+    &test_struct::void_void,
+    &test_struct::error_void_void,
+  };
+
+  auto future = async::make_promise_all(methods, &test).run();
+
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
+}
+
+
+TEST_CASE("Make all with class methods void string", "[make promise all]")
+{
+  test_struct test;
+
+  std::vector<void(test_struct::*)(std::string) const> methods
+  {
+    &test_struct::void_string,
+    &test_struct::void_string,
+  };
+
+  auto future = async::make_promise_all(methods, &test, str1).run();
+
+  REQUIRE_NOTHROW(future.get());
+}
+
+
+TEST_CASE("Make all with class methods error void string", "[make promise all]")
+{
+  test_struct test;
+
+  std::vector<void(test_struct::*)(std::string) const> methods
+  {
+    &test_struct::void_string,
+    &test_struct::error_void_string,
+  };
+
+  auto future = async::make_promise_all(methods, &test, str1).run();
+
+  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
+}
+
+
+TEST_CASE("Make all with class methods string void", "[make promise all]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)() const> methods
+  {
+    &test_struct::string_void1,
+    &test_struct::string_void2,
+  };
+
+  auto future = async::make_promise_all(methods, &test).run();
+
+  std::vector<std::string> res;
+  REQUIRE_NOTHROW(res = future.get());
+  REQUIRE_THAT(res, Catch::Matchers::RangeEquals(std::vector<std::string>{str1, str2}));
+}
+
+
+TEST_CASE("Make all with class methods error string void", "[make promise all]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)() const> methods
+  {
+    &test_struct::string_void1,
+    &test_struct::error_string_void,
+  };
+
+  auto future = async::make_promise_all(methods, &test).run();
+
+  std::vector<std::string> res;
+  REQUIRE_THROWS_MATCHES(res = future.get(), std::runtime_error, Catch::Matchers::Message(str2));
+  REQUIRE(res.empty());
+}
+
+
+TEST_CASE("Make all with class methods string string", "[make promise all]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)(std::string) const> methods
+  {
+    &test_struct::string_string,
+    &test_struct::string_string,
+  };
+
+  auto future = async::make_promise_all(methods, &test, str1).run();
+
+  std::vector<std::string> res;
+  REQUIRE_NOTHROW(res = future.get());
+  REQUIRE_THAT(res, Catch::Matchers::RangeEquals(std::vector<std::string>{str1, str1}));
+}
+
+
+TEST_CASE("Make all with class methods error string string", "[make promise all]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)(std::string) const> methods
+  {
+    &test_struct::string_string,
+    &test_struct::error_string_string
+  };
+
+  auto future = async::make_promise_all(methods, &test, str1).run();
+
+  std::vector<std::string> res;
+  REQUIRE_THROWS_MATCHES(res = future.get(), std::runtime_error, Catch::Matchers::Message(str2));
+  REQUIRE(res.empty());
+}
+
+
+TEST_CASE("Make all with funcs void void", "[make promise all]")
 {
   std::vector<void(*)()> funcs
   {
@@ -41,7 +177,7 @@ TEST_CASE("Make all void void", "[make promise all]")
 }
 
 
-TEST_CASE("Make all error void void", "[make promise all]")
+TEST_CASE("Make all with funcs error void void", "[make promise all]")
 {
   std::vector<void(*)()> funcs
   {
@@ -55,7 +191,7 @@ TEST_CASE("Make all error void void", "[make promise all]")
 }
 
 
-TEST_CASE("Make all void string", "[make promise all]")
+TEST_CASE("Make all with funcs void string", "[make promise all]")
 {
   std::vector<void(*)(std::string)> funcs
   {
@@ -69,7 +205,7 @@ TEST_CASE("Make all void string", "[make promise all]")
 }
 
 
-TEST_CASE("Make all error void string", "[make promise all]")
+TEST_CASE("Make all with funcs error void string", "[make promise all]")
 {
   std::vector<void(*)(std::string)> funcs
   {
@@ -83,7 +219,7 @@ TEST_CASE("Make all error void string", "[make promise all]")
 }
 
 
-TEST_CASE("Make all string void", "[make promise all]")
+TEST_CASE("Make all with funcs string void", "[make promise all]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -99,7 +235,7 @@ TEST_CASE("Make all string void", "[make promise all]")
 }
 
 
-TEST_CASE("Make all error string void", "[make promise all]")
+TEST_CASE("Make all with funcs error string void", "[make promise all]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -115,7 +251,7 @@ TEST_CASE("Make all error string void", "[make promise all]")
 }
 
 
-TEST_CASE("Make all string string", "[make promise all]")
+TEST_CASE("Make all with funcs string string", "[make promise all]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
@@ -131,7 +267,7 @@ TEST_CASE("Make all string string", "[make promise all]")
 }
 
 
-TEST_CASE("Make all error string string", "[make promise all]")
+TEST_CASE("Make all with funcs error string string", "[make promise all]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {

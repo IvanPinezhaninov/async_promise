@@ -2,7 +2,7 @@
 **
 ** Copyright (C) 2023 Ivan Pinezhaninov <ivan.pinezhaninov@gmail.com>
 **
-** This file is part of the async_promise project - which can be found at
+** This file is part of the async_promise - which can be found at
 ** https://github.com/IvanPinezhaninov/async_promise/.
 **
 ** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -15,20 +15,11 @@
 **
 ******************************************************************************/
 
-// async_promise
-#include <async_promise.hpp>
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
 
-// catch2
-#include <catch2/matchers/catch_matchers_exception.hpp>
-#include <catch2/catch_test_macros.hpp>
+static constexpr auto aggregate_error_message = "All functions rejected";
+static constexpr auto str1 = "Hello World!";
+static constexpr auto str2 = "Hello Universe!";
 
-// local
-#include "common.h"
-
-
-TEST_CASE("Make rejected", "[make rejected promise]")
-{
-  auto future = async::make_rejected_promise(std::runtime_error{str2}).run();
-
-  REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
-}
+#endif // CONSTANTS_H

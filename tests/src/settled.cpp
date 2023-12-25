@@ -88,33 +88,33 @@ TEST_CASE("Resolved settled object move operator", "[settled]")
 
 TEST_CASE("Rejected settled object copy constructor", "[settled]")
 {
-  async::settled<std::string> obj1{std::make_exception_ptr(std::runtime_error{str1})};
+  async::settled<std::string> obj1{std::make_exception_ptr(std::runtime_error{str2})};
   REQUIRE(obj1.type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str2));
 
   auto obj2 = obj1;
   REQUIRE(obj2.type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj2.error), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj2.error), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
 TEST_CASE("Rejected settled object move constructor", "[settled]")
 {
-  async::settled<std::string> obj1{std::make_exception_ptr(std::runtime_error{str1})};
+  async::settled<std::string> obj1{std::make_exception_ptr(std::runtime_error{str2})};
   REQUIRE(obj1.type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str2));
 
   auto obj2 = std::move(obj1);
   REQUIRE(obj2.type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj2.error), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj2.error), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
 TEST_CASE("Rejected settled object copy operator", "[settled]")
 {
-  async::settled<std::string> obj1{std::make_exception_ptr(std::runtime_error{str1})};
+  async::settled<std::string> obj1{std::make_exception_ptr(std::runtime_error{str2})};
   REQUIRE(obj1.type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str2));
 
   async::settled<std::string> obj2{std::make_exception_ptr(std::runtime_error{str2})};
   REQUIRE(obj2.type == async::settle_type::rejected);
@@ -128,9 +128,9 @@ TEST_CASE("Rejected settled object copy operator", "[settled]")
 
 TEST_CASE("Rejected settled object move operator", "[settled]")
 {
-  async::settled<std::string> obj1{std::make_exception_ptr(std::runtime_error{str1})};
+  async::settled<std::string> obj1{std::make_exception_ptr(std::runtime_error{str2})};
   REQUIRE(obj1.type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str2));
 
   async::settled<std::string> obj2{std::make_exception_ptr(std::runtime_error{str2})};
   REQUIRE(obj2.type == async::settle_type::rejected);
@@ -138,7 +138,7 @@ TEST_CASE("Rejected settled object move operator", "[settled]")
 
   obj2 = std::move(obj1);
   REQUIRE(obj2.type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj2.error), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj2.error), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
@@ -212,33 +212,33 @@ TEST_CASE("Resolved settled void object move operator", "[settled]")
 
 TEST_CASE("Rejected settled void object copy constructor", "[settled]")
 {
-  async::settled<void> obj1{std::make_exception_ptr(std::runtime_error{str1})};
+  async::settled<void> obj1{std::make_exception_ptr(std::runtime_error{str2})};
   REQUIRE(obj1.type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str2));
 
   auto obj2 = obj1;
   REQUIRE(obj2.type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj2.error), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj2.error), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
 TEST_CASE("Rejected settled void object move constructor", "[settled]")
 {
-  async::settled<void> obj1{std::make_exception_ptr(std::runtime_error{str1})};
+  async::settled<void> obj1{std::make_exception_ptr(std::runtime_error{str2})};
   REQUIRE(obj1.type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str2));
 
   auto obj2 = std::move(obj1);
   REQUIRE(obj2.type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj2.error), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj2.error), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
 TEST_CASE("Rejected settled void object copy operator", "[settled]")
 {
-  async::settled<void> obj1{std::make_exception_ptr(std::runtime_error{str1})};
+  async::settled<void> obj1{std::make_exception_ptr(std::runtime_error{str2})};
   REQUIRE(obj1.type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str2));
 
   async::settled<void> obj2{std::make_exception_ptr(std::runtime_error{str2})};
   REQUIRE(obj2.type == async::settle_type::rejected);
@@ -252,9 +252,9 @@ TEST_CASE("Rejected settled void object copy operator", "[settled]")
 
 TEST_CASE("Rejected settled void object move operator", "[settled]")
 {
-  async::settled<void> obj1{std::make_exception_ptr(std::runtime_error{str1})};
+  async::settled<void> obj1{std::make_exception_ptr(std::runtime_error{str2})};
   REQUIRE(obj1.type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj1.error), std::runtime_error, Catch::Matchers::Message(str2));
 
   async::settled<void> obj2{std::make_exception_ptr(std::runtime_error{str2})};
   REQUIRE(obj2.type == async::settle_type::rejected);
@@ -262,7 +262,7 @@ TEST_CASE("Rejected settled void object move operator", "[settled]")
 
   obj2 = std::move(obj1);
   REQUIRE(obj2.type == async::settle_type::rejected);
-  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj2.error), std::runtime_error, Catch::Matchers::Message(str1));
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(obj2.error), std::runtime_error, Catch::Matchers::Message(str2));
 }
 
 
