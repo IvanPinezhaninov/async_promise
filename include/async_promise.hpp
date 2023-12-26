@@ -979,12 +979,184 @@ class all_func_task_void<void, ParentResult, Container, Func, Allocator> final :
 };
 
 
-template<typename Result, typename ParentResult, typename FuncResult,
-         template<typename, typename> class Container, typename Func, typename Allocator>
-class all_settled_task final : public next_task<Result, ParentResult>
+template<typename Result, typename ParentResult, typename MethodResult,
+template<typename, typename> class Container, typename Method, typename Allocator, typename Class>
+class all_settled_class_task final : public next_task<Result, ParentResult>
 {
   public:
-    all_settled_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
+    all_settled_class_task(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_methods{std::move(methods)}
+      , m_obj{obj}
+    {}
+
+    Result run() final
+    {
+      auto futures = vector_helper::create_vector<std::future<MethodResult>>(m_methods.size());
+      auto rv = this->m_parent->run();
+      for (auto method : m_methods)
+        futures.push_back(std::async(std::launch::async, std::move(method), m_obj, rv));
+
+      Result result;
+      vector_helper::reserve(result, m_methods.size());
+
+      for (auto& future : futures)
+      {
+        try
+        {
+          result.emplace_back(future.get());
+        }
+        catch(...)
+        {
+          result.emplace_back(std::current_exception());
+        }
+      }
+
+      return result;
+    }
+
+  private:
+    Container<Method, Allocator> m_methods;
+    Class* const m_obj;
+};
+
+
+template<typename Result, typename ParentResult,
+         template<typename, typename> class Container, typename Method, typename Allocator, typename Class>
+class all_settled_class_task<Result, ParentResult, void, Container, Method, Allocator, Class> final
+    : public next_task<Result, ParentResult>
+{
+  public:
+    all_settled_class_task(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_methods{std::move(methods)}
+      , m_obj{obj}
+    {}
+
+    Result run() final
+    {
+      auto futures = vector_helper::create_vector<std::future<void>>(m_methods.size());
+      auto rv = this->m_parent->run();
+      for (auto method : m_methods)
+        futures.push_back(std::async(std::launch::async, std::move(method), m_obj, rv));
+
+      Result result;
+      vector_helper::reserve(result, m_methods.size());
+
+      for (auto& future : futures)
+      {
+        try
+        {
+          future.get();
+          result.emplace_back();
+        }
+        catch(...)
+        {
+          result.emplace_back(std::current_exception());
+        }
+      }
+
+      return result;
+    }
+
+  private:
+    Container<Method, Allocator> m_methods;
+    Class* const m_obj;
+};
+
+
+template<typename Result, typename ParentResult, typename MethodResult,
+         template<typename, typename> class Container, typename Method, typename Allocator, typename Class>
+class all_settled_class_task_void final : public next_task<Result, ParentResult>
+{
+  public:
+    all_settled_class_task_void(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_methods{std::move(methods)}
+      , m_obj{obj}
+    {}
+
+    Result run() final
+    {
+      auto futures = vector_helper::create_vector<std::future<MethodResult>>(m_methods.size());
+      this->m_parent->run();
+      for (auto method : m_methods)
+        futures.push_back(std::async(std::launch::async, std::move(method), m_obj));
+
+      Result result;
+      vector_helper::reserve(result, m_methods.size());
+
+      for (auto& future : futures)
+      {
+        try
+        {
+          result.emplace_back(future.get());
+        }
+        catch(...)
+        {
+          result.emplace_back(std::current_exception());
+        }
+      }
+
+      return result;
+    }
+
+  private:
+    Container<Method, Allocator> m_methods;
+    Class* const m_obj;
+};
+
+
+template<typename Result, typename ParentResult,
+         template<typename, typename> class Container, typename Method, typename Allocator, typename Class>
+class all_settled_class_task_void<Result, ParentResult, void, Container, Method, Allocator, Class> final
+    : public next_task<Result, ParentResult>
+{
+  public:
+    all_settled_class_task_void(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
+      : next_task<Result, ParentResult>{std::move(parent)}
+      , m_methods{std::move(methods)}
+      , m_obj{obj}
+    {}
+
+    Result run() final
+    {
+      auto futures = vector_helper::create_vector<std::future<void>>(m_methods.size());
+      this->m_parent->run();
+      for (auto method : m_methods)
+        futures.push_back(std::async(std::launch::async, std::move(method), m_obj));
+
+      Result result;
+      vector_helper::reserve(result, m_methods.size());
+
+      for (auto& future : futures)
+      {
+        try
+        {
+          future.get();
+          result.emplace_back();
+        }
+        catch(...)
+        {
+          result.emplace_back(std::current_exception());
+        }
+      }
+
+      return result;
+    }
+
+  private:
+    Container<Method, Allocator> m_methods;
+    Class* const m_obj;
+};
+
+
+template<typename Result, typename ParentResult, typename FuncResult,
+         template<typename, typename> class Container, typename Func, typename Allocator>
+class all_settled_func_task final : public next_task<Result, ParentResult>
+{
+  public:
+    all_settled_func_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
       : next_task<Result, ParentResult>{std::move(parent)}
       , m_funcs{std::move(funcs)}
     {}
@@ -1021,11 +1193,11 @@ class all_settled_task final : public next_task<Result, ParentResult>
 
 template<typename Result, typename ParentResult,
          template<typename, typename> class Container, typename Func, typename Allocator>
-class all_settled_task<Result, ParentResult, void, Container, Func, Allocator> final
+class all_settled_func_task<Result, ParentResult, void, Container, Func, Allocator> final
     : public next_task<Result, ParentResult>
 {
   public:
-    all_settled_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
+    all_settled_func_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
       : next_task<Result, ParentResult>{std::move(parent)}
       , m_funcs{std::move(funcs)}
     {}
@@ -1063,10 +1235,10 @@ class all_settled_task<Result, ParentResult, void, Container, Func, Allocator> f
 
 template<typename Result, typename ParentResult, typename FuncResult,
          template<typename, typename> class Container, typename Func, typename Allocator>
-class all_settled_task_void final : public next_task<Result, ParentResult>
+class all_settled_func_task_void final : public next_task<Result, ParentResult>
 {
   public:
-    all_settled_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
+    all_settled_func_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
       : next_task<Result, ParentResult>{std::move(parent)}
       , m_funcs{std::move(funcs)}
     {}
@@ -1103,11 +1275,11 @@ class all_settled_task_void final : public next_task<Result, ParentResult>
 
 template<typename Result, typename ParentResult,
          template<typename, typename> class Container, typename Func, typename Allocator>
-class all_settled_task_void<Result, ParentResult, void, Container, Func, Allocator> final
+class all_settled_func_task_void<Result, ParentResult, void, Container, Func, Allocator> final
     : public next_task<Result, ParentResult>
 {
   public:
-    all_settled_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
+    all_settled_func_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
       : next_task<Result, ParentResult>{std::move(parent)}
       , m_funcs{std::move(funcs)}
     {}
@@ -1649,13 +1821,112 @@ class make_all_func_task<void, Container, Func, Allocator, Args...> final : publ
 };
 
 
-template<typename Result, typename FuncResult, template<typename, typename> class Container,
-         typename Func, typename Allocator, typename... Args>
-class make_all_settled_task final : public task<Result>
+template<typename Result, typename MethodResult, template<typename, typename> class Container,
+         typename Method, typename Allocator, typename Class, typename... Args>
+class make_all_settled_class_task final : public task<Result>
 {
   public:
     template<typename... Args_>
-    explicit make_all_settled_task(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_all_settled_class_task(Container<Method, Allocator> methods, Class* obj, Args_&&... args)
+      : m_methods{std::move(methods)}
+      , m_args{std::forward<Args_>(args)...}
+      , m_obj{obj}
+    {}
+
+    Result run() final
+    {
+      auto futures = vector_helper::create_vector<std::future<MethodResult>>(m_methods.size());
+      using task = make_all_settled_class_task<Result, MethodResult, Container, Method, Allocator, Class, Args...>;
+      for (auto method : m_methods)
+        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method)));
+
+      Result result;
+      vector_helper::reserve(result, m_methods.size());
+
+      for (auto& future : futures)
+      {
+        try
+        {
+          result.emplace_back(future.get());
+        }
+        catch(...)
+        {
+          result.emplace_back(std::current_exception());
+        }
+      }
+
+      return result;
+    }
+
+  private:
+    MethodResult call(Method method)
+    {
+      return class_method_call_helper<MethodResult>::call(std::move(method), m_obj, m_args);
+    }
+
+    Container<Method, Allocator> m_methods;
+    Class* const m_obj;
+    std::tuple<Args...> m_args;
+};
+
+
+template<typename Result, template<typename, typename> class Container,
+         typename Method, typename Allocator, typename Class, typename... Args>
+class make_all_settled_class_task<Result, void, Container, Method, Allocator, Class, Args...> final : public task<Result>
+{
+  public:
+    template<typename... Args_>
+    explicit make_all_settled_class_task(Container<Method, Allocator> methods, Class* obj, Args_&&... args)
+      : m_methods{std::move(methods)}
+      , m_args{std::forward<Args_>(args)...}
+      , m_obj{obj}
+    {}
+
+    Result run() final
+    {
+      auto futures = vector_helper::create_vector<std::future<void>>(m_methods.size());
+      using task = make_all_settled_class_task<Result, void, Container, Method, Allocator, Class, Args...>;
+      for (auto method : m_methods)
+        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method)));
+
+      Result result;
+      vector_helper::reserve(result, m_methods.size());
+
+      for (auto& future : futures)
+      {
+        try
+        {
+          future.get();
+          result.emplace_back();
+        }
+        catch(...)
+        {
+          result.emplace_back(std::current_exception());
+        }
+      }
+
+      return result;
+    }
+
+  private:
+    void call(Method method)
+    {
+      class_method_call_helper<void>::call(std::move(method), m_obj, m_args);
+    }
+
+    Container<Method, Allocator> m_methods;
+    Class* const m_obj;
+    std::tuple<Args...> m_args;
+};
+
+
+template<typename Result, typename FuncResult, template<typename, typename> class Container,
+         typename Func, typename Allocator, typename... Args>
+class make_all_settled_func_task final : public task<Result>
+{
+  public:
+    template<typename... Args_>
+    explicit make_all_settled_func_task(Container<Func, Allocator> funcs, Args_&&... args)
       : m_funcs{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -1663,7 +1934,7 @@ class make_all_settled_task final : public task<Result>
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<FuncResult>>(m_funcs.size());
-      using task = make_all_settled_task<Result, FuncResult, Container, Func, Allocator, Args...>;
+      using task = make_all_settled_func_task<Result, FuncResult, Container, Func, Allocator, Args...>;
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func)));
 
@@ -1698,11 +1969,11 @@ class make_all_settled_task final : public task<Result>
 
 template<typename Result, template<typename, typename> class Container,
          typename Func, typename Allocator, typename... Args>
-class make_all_settled_task<Result, void, Container, Func, Allocator, Args...> final : public task<Result>
+class make_all_settled_func_task<Result, void, Container, Func, Allocator, Args...> final : public task<Result>
 {
   public:
     template<typename... Args_>
-    explicit make_all_settled_task(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_all_settled_func_task(Container<Func, Allocator> funcs, Args_&&... args)
       : m_funcs{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -1710,7 +1981,7 @@ class make_all_settled_task<Result, void, Container, Func, Allocator, Args...> f
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<void>>(m_funcs.size());
-      using task = make_all_settled_task<Result, void, Container, Func, Allocator, Args...>;
+      using task = make_all_settled_func_task<Result, void, Container, Func, Allocator, Args...>;
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func)));
 
@@ -2013,7 +2284,7 @@ class promise
      * @brief Constructor to create a promise object with an initial class method.
      * @param method - Method for call.
      * @param obj - Object containing the required method.
-     * @param args - Optional function arguments.
+     * @param args - Optional arguments.
      */
     template<typename Method, typename Class, typename... Args,
              typename task = internal::initial_class_task<T, Method, Class, Args...>,
@@ -2026,7 +2297,7 @@ class promise
     /**
      * @brief Constructor to create a promise object with an initial function.
      * @param func - Initial function.
-     * @param args - Optional function arguments.
+     * @param args - Optional arguments.
      */
     template<typename Func, typename... Args,
              typename task = internal::initial_func_task<T, Func, Args...>>
@@ -2202,14 +2473,14 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator, typename Class,
-             typename Arg = T, typename FuncResult = typename std::result_of<Func(Class*, Arg)>::type,
+    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+             typename Arg = T, typename FuncResult = typename std::result_of<Method(Class*, Arg)>::type,
              typename Result = Container<FuncResult, std::allocator<FuncResult>>,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
-    promise<Result> all(Container<Func, Allocator> methods, Class* obj) const
+    promise<Result> all(Container<Method, Allocator> methods, Class* obj) const
     {
-      using task = internal::all_class_task<Result, Arg, Container, Func, Allocator, Class>;
+      using task = internal::all_class_task<Result, Arg, Container, Method, Allocator, Class>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -2221,13 +2492,13 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator, typename Class,
-             typename FuncResult = typename std::result_of<Func(Class*)>::type,
+    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+             typename FuncResult = typename std::result_of<Method(Class*)>::type,
              typename Result = Container<FuncResult, std::allocator<FuncResult>>,
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
-    promise<Result> all(Container<Func, Allocator> methods, Class* obj) const
+    promise<Result> all(Container<Method, Allocator> methods, Class* obj) const
     {
-      using task = internal::all_class_task_void<Result, T, Container, Func, Allocator, Class>;
+      using task = internal::all_class_task_void<Result, T, Container, Method, Allocator, Class>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -2239,13 +2510,13 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator, typename Class,
-             typename Arg = T, typename FuncResult = typename std::result_of<Func(Class*, Arg)>::type,
+    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+             typename Arg = T, typename FuncResult = typename std::result_of<Method(Class*, Arg)>::type,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
              typename = typename std::enable_if<std::is_void<FuncResult>::value>::type>
-    promise<void> all(Container<Func, Allocator> methods, Class* obj) const
+    promise<void> all(Container<Method, Allocator> methods, Class* obj) const
     {
-      using task = internal::all_class_task<void, Arg, Container, Func, Allocator, Class>;
+      using task = internal::all_class_task<void, Arg, Container, Method, Allocator, Class>;
       return promise<void>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -2257,12 +2528,12 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator, typename Class,
-             typename FuncResult = typename std::result_of<Func(Class*)>::type,
+    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+             typename FuncResult = typename std::result_of<Method(Class*)>::type,
              typename = typename std::enable_if<std::is_void<FuncResult>::value>::type>
-    promise<void> all(Container<Func, Allocator> methods, Class* obj) const
+    promise<void> all(Container<Method, Allocator> methods, Class* obj) const
     {
-      using task = internal::all_class_task_void<void, void, Container, Func, Allocator, Class>;
+      using task = internal::all_class_task_void<void, void, Container, Method, Allocator, Class>;
       return promise<void>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -2336,6 +2607,82 @@ class promise
 
 
     /**
+     * @brief Add an iterable of class methods to be called next.
+     *        Return an iterable of @ref settled objects with either a result or an error.
+     * @param methods - Methods that receives the result of the previous function.
+     * @param obj - Object containing the required methods.
+     * @return Promise object.
+     */
+    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+             typename Arg = T, typename FuncResult = typename std::result_of<Method(Class*, Arg)>::type,
+             typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
+             typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
+             typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
+    promise<Result> all_settled(Container<Method, Allocator> methods, Class* obj) const
+    {
+      using task = internal::all_settled_class_task<Result, Arg, FuncResult, Container, Method, Allocator, Class>;
+      return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
+    }
+
+
+    /**
+     * @brief Add an iterable of class methods to be called next.
+     *        Return an iterable of @ref settled objects with either a result or an error.
+     * @param methods - Methods that receives the result of the previous function.
+     * @param obj - Object containing the required methods.
+     * @return Promise object.
+     */
+    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+             typename FuncResult = typename std::result_of<Method(Class*)>::type,
+             typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
+             typename = typename std::enable_if<std::is_void<FuncResult>::value>::type,
+             typename = typename std::true_type::type>
+    promise<Result> all_settled(Container<Method, Allocator> methods, Class* obj) const
+    {
+      using task = internal::all_settled_class_task_void<Result, T, void, Container, Method, Allocator, Class>;
+      return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
+    }
+
+
+    /**
+     * @brief Add an iterable of class methods to be called next.
+     *        Return an iterable of @ref settled objects with either a result or an error.
+     * @param methods - Methods that receives the result of the previous function.
+     * @param obj - Object containing the required methods.
+     * @return Promise object.
+     */
+    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+             typename Arg = T, typename FuncResult = typename std::result_of<Method(Class*, Arg)>::type,
+             typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
+             typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
+             typename = typename std::enable_if<std::is_void<FuncResult>::value>::type,
+             typename = typename std::true_type::type>
+    promise<Result> all_settled(Container<Method, Allocator> methods, Class* obj) const
+    {
+      using task = internal::all_settled_class_task<Result, Arg, void, Container, Method, Allocator, Class>;
+      return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
+    }
+
+
+    /**
+     * @brief Add an iterable of class methods to be called next.
+     *        Return an iterable of @ref settled objects with either a result or an error.
+     * @param methods - Methods that receives the result of the previous function.
+     * @param obj - Object containing the required methods.
+     * @return Promise object.
+     */
+    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+             typename FuncResult = typename std::result_of<Method(Class*)>::type,
+             typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
+             typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
+    promise<Result> all_settled(Container<Method, Allocator> methods, Class* obj) const
+    {
+      using task = internal::all_settled_class_task_void<Result, T, FuncResult, Container, Method, Allocator, Class>;
+      return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
+    }
+
+
+    /**
      * @brief Add an iterable of functions to be called next.
      *        Return an iterable of @ref settled objects with either a result or an error.
      * @param funcs - Functions that receives the result of the previous function.
@@ -2348,7 +2695,7 @@ class promise
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
     promise<Result> all_settled(Container<Func, Allocator> funcs) const
     {
-      using task = internal::all_settled_task<Result, Arg, FuncResult, Container, Func, Allocator>;
+      using task = internal::all_settled_func_task<Result, Arg, FuncResult, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -2366,7 +2713,7 @@ class promise
              typename = typename std::true_type::type>
     promise<Result> all_settled(Container<Func, Allocator> funcs) const
     {
-      using task = internal::all_settled_task_void<Result, T, void, Container, Func, Allocator>;
+      using task = internal::all_settled_func_task_void<Result, T, void, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -2385,7 +2732,7 @@ class promise
              typename = typename std::true_type::type>
     promise<Result> all_settled(Container<Func, Allocator> funcs) const
     {
-      using task = internal::all_settled_task<Result, Arg, void, Container, Func, Allocator>;
+      using task = internal::all_settled_func_task<Result, Arg, void, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -2402,7 +2749,7 @@ class promise
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
     promise<Result> all_settled(Container<Func, Allocator> funcs) const
     {
-      using task = internal::all_settled_task_void<Result, T, FuncResult, Container, Func, Allocator>;
+      using task = internal::all_settled_func_task_void<Result, T, FuncResult, Container, Func, Allocator>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -2519,7 +2866,7 @@ static promise<Result> make_promise(Func&& func, Args&&... args)
 
 
 /**
- * @brief Make promise with an iterable of class methods to be called.
+ * @brief Make a promise with an iterable of class methods to be called.
  *        Return promise object with either an iterable of results or the first rejection reason.
  * @param methods - Methods.
  * @param obj - Object containing the required methods.
@@ -2540,7 +2887,7 @@ static promise<Result> make_promise_all(Container<Method, Allocator> methods, Cl
 
 
 /**
- * @brief Make promise with an iterable of class methods to be called.
+ * @brief Make a promise with an iterable of class methods to be called.
  *        Return promise object with either a void value or the first rejection reason.
  * @param methods - Methods.
  * @param obj - Object containing the required methods.
@@ -2560,10 +2907,10 @@ static promise<void> make_promise_all(Container<Method, Allocator> methods, Clas
 
 
 /**
- * @brief Make promise with an iterable of functions to be called.
+ * @brief Make a promise with an iterable of functions to be called.
  *        Return promise object with either an iterable of results or the first rejection reason.
  * @param funcs - Functions.
- * @param args - Function arguments.
+ * @param args - Optional arguments.
  * @return Promise object.
  */
 template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
@@ -2578,10 +2925,10 @@ static promise<Result> make_promise_all(Container<Func, Allocator> funcs, Args&&
 
 
 /**
- * @brief Make promise with an iterable of functions to be called.
+ * @brief Make a promise with an iterable of functions to be called.
  *        Return promise object with either a void value or the first rejection reason.
  * @param funcs - Functions.
- * @param args - Function arguments.
+ * @param args - Optional arguments.
  * @return Promise object.
  */
 template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
@@ -2595,10 +2942,28 @@ static promise<void> make_promise_all(Container<Func, Allocator> funcs, Args&&..
 
 
 /**
- * @brief Make promise with an iterable of functions to be called.
+ * @brief Make a promise with an iterable of class methods to be called.
+ *        Return an iterable of @ref settled objects with either a result or an error.
+ * @param methods - Methods.
+ * @param args - Optional arguments.
+ * @return Promise object.
+ */
+template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+         typename... Args, typename FuncResult = typename std::result_of<Method(Class*, Args...)>::type,
+         typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
+         typename = typename std::enable_if<internal::is_invocable<Method, Class, Args...>::value>::type>
+static promise<Result> make_promise_all_settled(Container<Method, Allocator> methods, Class* obj, Args&&... args)
+{
+  using task = internal::make_all_settled_class_task<Result, FuncResult, Container, Method, Allocator, Class, Args...>;
+  return promise<Result>{std::make_shared<task>(std::move(methods), obj, std::forward<Args>(args)...)};
+}
+
+
+/**
+ * @brief Make a promise with an iterable of functions to be called.
  *        Return an iterable of @ref settled objects with either a result or an error.
  * @param funcs - Functions.
- * @param args - Function arguments.
+ * @param args - Optional arguments.
  * @return Promise object.
  */
 template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
@@ -2606,16 +2971,16 @@ template<template<typename, typename> class Container, typename Func, typename A
          typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>>
 static promise<Result> make_promise_all_settled(Container<Func, Allocator> funcs, Args&&... args)
 {
-  using task = internal::make_all_settled_task<Result, FuncResult, Container, Func, Allocator, Args...>;
+  using task = internal::make_all_settled_func_task<Result, FuncResult, Container, Func, Allocator, Args...>;
   return promise<Result>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
 }
 
 
 /**
- * @brief Make promise with an iterable of functions to be called.
+ * @brief Make a promise with an iterable of functions to be called.
  *        Return the first resolved result.
  * @param funcs - Functions.
- * @param args - Function arguments.
+ * @param args - Optional arguments.
  * @return Promise object.
  */
 template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
@@ -2628,10 +2993,10 @@ static promise<Result> make_promise_any(Container<Func, Allocator> funcs, Args&&
 
 
 /**
- * @brief Make promise with an iterable of functions to be called.
+ * @brief Make a promise with an iterable of functions to be called.
  *        Return either the first resolved or rejected result.
  * @param funcs - Functions.
- * @param args - Function arguments.
+ * @param args - Optional arguments.
  * @return Promise object.
  */
 template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
@@ -2644,7 +3009,7 @@ static promise<Result> make_promise_race(Container<Func, Allocator> funcs, Args&
 
 
 /**
- * @brief Make promise with resolved state.
+ * @brief Make a promise with a resolved state.
  * @param value - Any value.
  * @return Promise object.
  */
@@ -2657,7 +3022,7 @@ static promise<T> make_resolved_promise(T&& value)
 
 
 /**
- * @brief Make promise with resolved state.
+ * @brief Make a promise with a resolved state.
  * @return Promise object.
  */
 static promise<void> make_resolved_promise()
@@ -2668,7 +3033,7 @@ static promise<void> make_resolved_promise()
 
 
 /**
- * @brief Make promise with rejected state.
+ * @brief Make a promise with a rejected state.
  * @param error - Any error
  * @return Promise object.
  */
@@ -2681,7 +3046,7 @@ static promise<T> make_rejected_promise(Error&& error)
 
 
 /**
- * @brief Make promise with rejected state.
+ * @brief Make a promise with a rejected state.
  * @param error - Any error
  * @return Promise object.
  */

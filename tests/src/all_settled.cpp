@@ -26,7 +26,211 @@
 #include "common.h"
 
 
-TEST_CASE("All settled void void", "[all_settled]")
+TEST_CASE("All settled with class method void void", "[all_settled]")
+{
+  test_struct test;
+
+  std::vector<void(test_struct::*)() const> methods
+  {
+    &test_struct::void_void,
+    &test_struct::void_void,
+  };
+
+  auto future = async::make_resolved_promise().all_settled(methods, &test).run();
+
+  std::vector<async::settled<void>> res;
+  REQUIRE_NOTHROW(res = future.get());
+
+  REQUIRE(res.size() == methods.size());
+  REQUIRE(res.front().type == async::settle_type::resolved);
+  REQUIRE(res.back().type == async::settle_type::resolved);
+}
+
+
+TEST_CASE("All settled with class method error void void", "[all_settled]")
+{
+  test_struct test;
+
+  std::vector<void(test_struct::*)() const> methods
+  {
+    &test_struct::void_void,
+    &test_struct::error_void_void,
+  };
+
+  auto future = async::make_resolved_promise().all_settled(methods, &test).run();
+
+  std::vector<async::settled<void>> res;
+  REQUIRE_NOTHROW(res = future.get());
+
+  REQUIRE(res.size() == methods.size());
+  REQUIRE(res.front().type == async::settle_type::resolved);
+  REQUIRE(res.back().type == async::settle_type::rejected);
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(res.back().error), std::runtime_error, Catch::Matchers::Message(str2));
+}
+
+
+TEST_CASE("All settled with class method void string", "[all_settled]")
+{
+  test_struct test;
+
+  std::vector<void(test_struct::*)(std::string) const> methods
+  {
+    &test_struct::void_string,
+    &test_struct::void_string,
+  };
+
+  auto future = async::make_resolved_promise(str1).all_settled(methods, &test).run();
+
+  std::vector<async::settled<void>> res;
+  REQUIRE_NOTHROW(res = future.get());
+
+  REQUIRE(res.size() == methods.size());
+  REQUIRE(res.front().type == async::settle_type::resolved);
+  REQUIRE(res.back().type == async::settle_type::resolved);
+}
+
+
+TEST_CASE("All settled with class method error void string", "[all_settled]")
+{
+  test_struct test;
+
+  std::vector<void(test_struct::*)(std::string) const> methods
+  {
+    &test_struct::void_string,
+    &test_struct::error_void_string,
+  };
+
+  auto future = async::make_resolved_promise(str1).all_settled(methods, &test).run();
+
+  std::vector<async::settled<void>> res;
+  REQUIRE_NOTHROW(res = future.get());
+
+  REQUIRE(res.size() == methods.size());
+  REQUIRE(res.front().type == async::settle_type::resolved);
+  REQUIRE(res.back().type == async::settle_type::rejected);
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(res.back().error), std::runtime_error, Catch::Matchers::Message(str2));
+}
+
+
+TEST_CASE("All settled with class method string void", "[all_settled]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)() const> methods
+  {
+    &test_struct::string_void1,
+    &test_struct::string_void2,
+  };
+
+  auto future = async::make_resolved_promise().all_settled(methods, &test).run();
+
+  std::vector<async::settled<std::string>> res;
+  REQUIRE_NOTHROW(res = future.get());
+
+  REQUIRE(res.size() == methods.size());
+  REQUIRE(res.front().type == async::settle_type::resolved);
+  REQUIRE(res.front().result == str1);
+  REQUIRE(res.back().type == async::settle_type::resolved);
+  REQUIRE(res.back().result == str2);
+}
+
+
+TEST_CASE("All settled with class method string void ignore arg", "[all_settled]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)() const> methods
+  {
+    &test_struct::string_void1,
+    &test_struct::string_void2,
+  };
+
+  auto future = async::make_resolved_promise(str1).all_settled(methods, &test).run();
+
+  std::vector<async::settled<std::string>> res;
+  REQUIRE_NOTHROW(res = future.get());
+
+  REQUIRE(res.size() == methods.size());
+  REQUIRE(res.front().type == async::settle_type::resolved);
+  REQUIRE(res.front().result == str1);
+  REQUIRE(res.back().type == async::settle_type::resolved);
+  REQUIRE(res.back().result == str2);
+}
+
+
+TEST_CASE("All settled with class method error string void", "[all_settled]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)() const> methods
+  {
+    &test_struct::string_void1,
+    &test_struct::error_string_void,
+  };
+
+  auto future = async::make_resolved_promise().all_settled(methods, &test).run();
+
+  std::vector<async::settled<std::string>> res;
+  REQUIRE_NOTHROW(res = future.get());
+
+  REQUIRE(res.size() == methods.size());
+
+  REQUIRE(res.front().type == async::settle_type::resolved);
+  REQUIRE(res.front().result == str1);
+  REQUIRE(res.back().type == async::settle_type::rejected);
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(res.back().error), std::runtime_error, Catch::Matchers::Message(str2));
+}
+
+
+TEST_CASE("All settled with class method string string", "[all_settled]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)(std::string) const> methods
+  {
+    &test_struct::string_string,
+    &test_struct::string_string,
+  };
+
+  auto future = async::make_resolved_promise(str1).all_settled(methods, &test).run();
+
+  std::vector<async::settled<std::string>> res;
+  REQUIRE_NOTHROW(res = future.get());
+
+  REQUIRE(res.size() == methods.size());
+  REQUIRE(res.front().type == async::settle_type::resolved);
+  REQUIRE(res.front().result == str1);
+  REQUIRE(res.back().type == async::settle_type::resolved);
+  REQUIRE(res.back().result == str1);
+}
+
+
+TEST_CASE("All settled with class method error string string", "[all_settled]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)(std::string) const> methods
+  {
+    &test_struct::string_string,
+    &test_struct::error_string_string
+  };
+
+  auto future = async::make_resolved_promise(str1).all_settled(methods, &test).run();
+
+  std::vector<async::settled<std::string>> res;
+  REQUIRE_NOTHROW(res = future.get());
+
+  REQUIRE(res.size() == methods.size());
+
+  REQUIRE(res.front().type == async::settle_type::resolved);
+  REQUIRE(res.front().result == str1);
+  REQUIRE(res.back().type == async::settle_type::rejected);
+  REQUIRE_THROWS_MATCHES(std::rethrow_exception(res.back().error), std::runtime_error, Catch::Matchers::Message(str2));
+}
+
+
+
+TEST_CASE("All settled with func void void", "[all_settled]")
 {
   std::vector<void(*)()> funcs
   {
@@ -45,7 +249,7 @@ TEST_CASE("All settled void void", "[all_settled]")
 }
 
 
-TEST_CASE("All settled error void void", "[all_settled]")
+TEST_CASE("All settled with func error void void", "[all_settled]")
 {
   std::vector<void(*)()> funcs
   {
@@ -65,7 +269,7 @@ TEST_CASE("All settled error void void", "[all_settled]")
 }
 
 
-TEST_CASE("All settled void string", "[all_settled]")
+TEST_CASE("All settled with func void string", "[all_settled]")
 {
   std::vector<void(*)(std::string)> funcs
   {
@@ -84,7 +288,7 @@ TEST_CASE("All settled void string", "[all_settled]")
 }
 
 
-TEST_CASE("All settled error void string", "[all_settled]")
+TEST_CASE("All settled with func error void string", "[all_settled]")
 {
   std::vector<void(*)(std::string)> funcs
   {
@@ -104,7 +308,7 @@ TEST_CASE("All settled error void string", "[all_settled]")
 }
 
 
-TEST_CASE("All settled string void", "[all_settled]")
+TEST_CASE("All settled with func string void", "[all_settled]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -125,7 +329,7 @@ TEST_CASE("All settled string void", "[all_settled]")
 }
 
 
-TEST_CASE("All settled string void ignore arg", "[all_settled]")
+TEST_CASE("All settled with func string void ignore arg", "[all_settled]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -146,7 +350,7 @@ TEST_CASE("All settled string void ignore arg", "[all_settled]")
 }
 
 
-TEST_CASE("All settled error string void", "[all_settled]")
+TEST_CASE("All settled with func error string void", "[all_settled]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -168,7 +372,7 @@ TEST_CASE("All settled error string void", "[all_settled]")
 }
 
 
-TEST_CASE("All settled string string", "[all_settled]")
+TEST_CASE("All settled with func string string", "[all_settled]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
@@ -189,7 +393,7 @@ TEST_CASE("All settled string string", "[all_settled]")
 }
 
 
-TEST_CASE("All settled error string string", "[all_settled]")
+TEST_CASE("All settled with func error string string", "[all_settled]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
