@@ -54,6 +54,18 @@ std::string test_struct::string_string(std::string str) const
 }
 
 
+std::string test_struct::string_string1(std::string str) const
+{
+  return str1;
+}
+
+
+std::string test_struct::string_string2(std::string str) const
+{
+  return str2;
+}
+
+
 std::string test_struct::error_string_string(std::string str) const
 {
   throw std::runtime_error{str2};

@@ -151,15 +151,15 @@ TEST_CASE("All with class method string string", "[all]")
 
   std::vector<std::string(test_struct::*)(std::string) const> methods
   {
-    &test_struct::string_string,
-    &test_struct::string_string,
+    &test_struct::string_string1,
+    &test_struct::string_string2,
   };
 
   auto future = async::make_resolved_promise(str1).all(methods, &test).run();
 
   std::vector<std::string> res;
   REQUIRE_NOTHROW(res = future.get());
-  REQUIRE_THAT(res, Catch::Matchers::RangeEquals(std::vector<std::string>{str1, str1}));
+  REQUIRE_THAT(res, Catch::Matchers::RangeEquals(std::vector<std::string>{str1, str2}));
 }
 
 

@@ -163,8 +163,8 @@ TEST_CASE("Make all settled with class method string string", "[make promise all
 
   std::vector<std::string(test_struct::*)(std::string) const> methods
   {
-    &test_struct::string_string,
-    &test_struct::string_string,
+    &test_struct::string_string1,
+    &test_struct::string_string2,
   };
 
   auto future = async::make_promise_all_settled(methods, &test, str1).run();
@@ -176,7 +176,7 @@ TEST_CASE("Make all settled with class method string string", "[make promise all
   REQUIRE(res.front().type == async::settle_type::resolved);
   REQUIRE(res.front().result == str1);
   REQUIRE(res.back().type == async::settle_type::resolved);
-  REQUIRE(res.back().result == str1);
+  REQUIRE(res.back().result == str2);
 }
 
 

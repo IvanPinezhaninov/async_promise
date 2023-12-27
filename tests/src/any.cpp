@@ -27,7 +27,224 @@
 #include "common.h"
 
 
-TEST_CASE("Any void void", "[any]")
+TEST_CASE("Any with class method void void", "[any]")
+{
+  test_struct test;
+
+  std::vector<void(test_struct::*)() const> methods
+  {
+    &test_struct::void_void,
+    &test_struct::void_void,
+  };
+
+  auto future = async::make_resolved_promise().any(methods, &test).run();
+
+  REQUIRE_NOTHROW(future.get());
+}
+
+
+TEST_CASE("Any with class method error void void", "[any]")
+{
+  test_struct test;
+
+  std::vector<void(test_struct::*)() const> methods
+  {
+    &test_struct::error_void_void,
+    &test_struct::void_void,
+  };
+
+  auto future = async::make_resolved_promise().any(methods, &test).run();
+
+  REQUIRE_NOTHROW(future.get());
+}
+
+
+TEST_CASE("Any with class method all error void void", "[any]")
+{
+  test_struct test;
+
+  std::vector<void(test_struct::*)() const> methods
+  {
+    &test_struct::error_void_void,
+    &test_struct::error_void_void,
+  };
+
+  auto future = async::make_resolved_promise().any(methods, &test).run();
+
+  REQUIRE_THROWS_MATCHES(future.get(), async::aggregate_error, Catch::Matchers::Message(aggregate_error_message));
+}
+
+
+TEST_CASE("Any with class method void string", "[any]")
+{
+  test_struct test;
+
+  std::vector<void(test_struct::*)(std::string) const> methods
+  {
+    &test_struct::void_string,
+    &test_struct::void_string,
+  };
+
+  auto future = async::make_resolved_promise(str1).any(methods, &test).run();
+
+  REQUIRE_NOTHROW(future.get());
+}
+
+
+TEST_CASE("Any with class method error void string", "[any]")
+{
+  test_struct test;
+
+  std::vector<void(test_struct::*)(std::string) const> methods
+  {
+    &test_struct::error_void_string,
+    &test_struct::void_string,
+  };
+
+  auto future = async::make_resolved_promise(str1).any(methods, &test).run();
+
+  REQUIRE_NOTHROW(future.get());
+}
+
+
+TEST_CASE("Any with class method all error void string", "[any]")
+{
+  test_struct test;
+
+  std::vector<void(test_struct::*)(std::string) const> methods
+  {
+    &test_struct::error_void_string,
+    &test_struct::error_void_string,
+  };
+
+  auto future = async::make_resolved_promise(str1).any(methods, &test).run();
+
+  REQUIRE_THROWS_MATCHES(future.get(), async::aggregate_error, Catch::Matchers::Message(aggregate_error_message));
+}
+
+
+TEST_CASE("Any with class method string void", "[any]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)() const> methods
+  {
+    &test_struct::string_void1,
+    &test_struct::string_void2,
+  };
+
+  auto future = async::make_resolved_promise().any(methods, &test).run();
+
+  std::string res;
+  REQUIRE_NOTHROW(res = future.get());
+  REQUIRE_THAT(res, Catch::Matchers::Equals(str1) || Catch::Matchers::Equals(str2));
+}
+
+
+TEST_CASE("Any with class method string void ignore arg", "[any]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)() const> methods
+  {
+    &test_struct::string_void1,
+    &test_struct::string_void2,
+  };
+
+  auto future = async::make_resolved_promise(str1).any(methods, &test).run();
+
+  std::string res;
+  REQUIRE_NOTHROW(res = future.get());
+  REQUIRE_THAT(res, Catch::Matchers::Equals(str1) || Catch::Matchers::Equals(str2));
+}
+
+
+TEST_CASE("Any with class method error string void", "[any]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)() const> methods
+  {
+    &test_struct::error_string_void,
+    &test_struct::string_void1,
+  };
+
+  auto future = async::make_resolved_promise().any(methods, &test).run();
+
+  std::string res;
+  REQUIRE_NOTHROW(res = future.get());
+  REQUIRE(res == str1);
+}
+
+
+TEST_CASE("Any with class method all error string void", "[any]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)() const> methods
+  {
+    &test_struct::error_string_void,
+    &test_struct::error_string_void,
+  };
+
+  auto future = async::make_resolved_promise().any(methods, &test).run();
+  REQUIRE_THROWS_MATCHES(future.get(), async::aggregate_error, Catch::Matchers::Message(aggregate_error_message));
+}
+
+
+TEST_CASE("Any with class method string string", "[any]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)(std::string) const> methods
+  {
+    &test_struct::string_string1,
+    &test_struct::string_string2,
+  };
+
+  auto future = async::make_resolved_promise(str1).any(methods, &test).run();
+
+  std::string res;
+  REQUIRE_NOTHROW(res = future.get());
+  REQUIRE_THAT(res, Catch::Matchers::Equals(str1) || Catch::Matchers::Equals(str2));
+}
+
+
+TEST_CASE("Any with class method error string string", "[any]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)(std::string) const> methods
+  {
+    &test_struct::error_string_string,
+    &test_struct::string_string,
+  };
+
+  auto future = async::make_resolved_promise(str1).any(methods, &test).run();
+
+  std::string res;
+  REQUIRE_NOTHROW(res = future.get());
+  REQUIRE(res == str1);
+}
+
+
+TEST_CASE("Any with class method all error string string", "[any]")
+{
+  test_struct test;
+
+  std::vector<std::string(test_struct::*)(std::string) const> methods
+  {
+    &test_struct::error_string_string,
+    &test_struct::error_string_string,
+  };
+
+  auto future = async::make_resolved_promise(str1).any(methods, &test).run();
+  REQUIRE_THROWS_MATCHES(future.get(), async::aggregate_error, Catch::Matchers::Message(aggregate_error_message));
+}
+
+
+
+TEST_CASE("Any with func void void", "[any]")
 {
   std::vector<void(*)()> funcs
   {
@@ -41,7 +258,7 @@ TEST_CASE("Any void void", "[any]")
 }
 
 
-TEST_CASE("Any error void void", "[any]")
+TEST_CASE("Any with func error void void", "[any]")
 {
   std::vector<void(*)()> funcs
   {
@@ -55,7 +272,7 @@ TEST_CASE("Any error void void", "[any]")
 }
 
 
-TEST_CASE("Any all error void void", "[any]")
+TEST_CASE("Any with func all error void void", "[any]")
 {
   std::vector<void(*)()> funcs
   {
@@ -69,7 +286,7 @@ TEST_CASE("Any all error void void", "[any]")
 }
 
 
-TEST_CASE("Any void string", "[any]")
+TEST_CASE("Any with func void string", "[any]")
 {
   std::vector<void(*)(std::string)> funcs
   {
@@ -83,7 +300,7 @@ TEST_CASE("Any void string", "[any]")
 }
 
 
-TEST_CASE("Any error void string", "[any]")
+TEST_CASE("Any with func error void string", "[any]")
 {
   std::vector<void(*)(std::string)> funcs
   {
@@ -97,7 +314,7 @@ TEST_CASE("Any error void string", "[any]")
 }
 
 
-TEST_CASE("Any all error void string", "[any]")
+TEST_CASE("Any with func all error void string", "[any]")
 {
   std::vector<void(*)(std::string)> funcs
   {
@@ -111,7 +328,7 @@ TEST_CASE("Any all error void string", "[any]")
 }
 
 
-TEST_CASE("Any string void", "[any]")
+TEST_CASE("Any with func string void", "[any]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -127,7 +344,7 @@ TEST_CASE("Any string void", "[any]")
 }
 
 
-TEST_CASE("Any string void ignore arg", "[any]")
+TEST_CASE("Any with func string void ignore arg", "[any]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -143,7 +360,7 @@ TEST_CASE("Any string void ignore arg", "[any]")
 }
 
 
-TEST_CASE("Any error string void", "[any]")
+TEST_CASE("Any with func error string void", "[any]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -159,7 +376,7 @@ TEST_CASE("Any error string void", "[any]")
 }
 
 
-TEST_CASE("Any all error string void", "[any]")
+TEST_CASE("Any with func all error string void", "[any]")
 {
   std::vector<std::string(*)()> funcs
   {
@@ -172,7 +389,7 @@ TEST_CASE("Any all error string void", "[any]")
 }
 
 
-TEST_CASE("Any string string", "[any]")
+TEST_CASE("Any with func string string", "[any]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
@@ -188,7 +405,7 @@ TEST_CASE("Any string string", "[any]")
 }
 
 
-TEST_CASE("Any error string string", "[any]")
+TEST_CASE("Any with func error string string", "[any]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
@@ -204,7 +421,7 @@ TEST_CASE("Any error string string", "[any]")
 }
 
 
-TEST_CASE("Any all error string string", "[any]")
+TEST_CASE("Any with func all error string string", "[any]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {

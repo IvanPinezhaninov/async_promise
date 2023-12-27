@@ -42,6 +42,10 @@ struct test_struct final
 
   std::string string_string(std::string str) const;
 
+  std::string string_string1(std::string str) const;
+
+  std::string string_string2(std::string str) const;
+
   std::string error_string_string(std::string str) const;
 
   std::string string_exception(std::exception_ptr e) const;
