@@ -15,21 +15,13 @@
 **
 ******************************************************************************/
 
-// async_promise
-#include <async_promise.hpp>
-
-// catch2
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_exception.hpp>
-#include <catch2/matchers/catch_matchers_string.hpp>
-
 // local
 #include "common.h"
 
 
 TEST_CASE("Make any with class method void void", "[make promise any]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<void(test_struct::*)() const> methods
   {
@@ -37,7 +29,7 @@ TEST_CASE("Make any with class method void void", "[make promise any]")
     &test_struct::void_void,
   };
 
-  auto future = async::make_promise_any(methods, &test).run();
+  auto future = async::make_promise_any(methods, &obj).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -45,7 +37,7 @@ TEST_CASE("Make any with class method void void", "[make promise any]")
 
 TEST_CASE("Make any with class method error void void", "[make promise any]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<void(test_struct::*)() const> methods
   {
@@ -53,7 +45,7 @@ TEST_CASE("Make any with class method error void void", "[make promise any]")
     &test_struct::void_void,
   };
 
-  auto future = async::make_promise_any(methods, &test).run();
+  auto future = async::make_promise_any(methods, &obj).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -61,7 +53,7 @@ TEST_CASE("Make any with class method error void void", "[make promise any]")
 
 TEST_CASE("Make any with class method all error void void", "[make promise any]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<void(test_struct::*)() const> methods
   {
@@ -69,7 +61,7 @@ TEST_CASE("Make any with class method all error void void", "[make promise any]"
     &test_struct::error_void_void,
   };
 
-  auto future = async::make_promise_any(methods, &test).run();
+  auto future = async::make_promise_any(methods, &obj).run();
 
   REQUIRE_THROWS_MATCHES(future.get(), async::aggregate_error, Catch::Matchers::Message(aggregate_error_message));
 }
@@ -77,7 +69,7 @@ TEST_CASE("Make any with class method all error void void", "[make promise any]"
 
 TEST_CASE("Make any with class method void string", "[make promise any]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<void(test_struct::*)(std::string) const> methods
   {
@@ -85,7 +77,7 @@ TEST_CASE("Make any with class method void string", "[make promise any]")
     &test_struct::void_string,
   };
 
-  auto future = async::make_promise_any(methods, &test, str1).run();
+  auto future = async::make_promise_any(methods, &obj, str1).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -93,7 +85,7 @@ TEST_CASE("Make any with class method void string", "[make promise any]")
 
 TEST_CASE("Make any with class method error void string", "[make promise any]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<void(test_struct::*)(std::string) const> methods
   {
@@ -101,7 +93,7 @@ TEST_CASE("Make any with class method error void string", "[make promise any]")
     &test_struct::void_string,
   };
 
-  auto future = async::make_promise_any(methods, &test, str1).run();
+  auto future = async::make_promise_any(methods, &obj, str1).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -109,7 +101,7 @@ TEST_CASE("Make any with class method error void string", "[make promise any]")
 
 TEST_CASE("Make any with class method all error void string", "[make promise any]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<void(test_struct::*)(std::string) const> methods
   {
@@ -117,7 +109,7 @@ TEST_CASE("Make any with class method all error void string", "[make promise any
     &test_struct::error_void_string,
   };
 
-  auto future = async::make_promise_any(methods, &test, str1).run();
+  auto future = async::make_promise_any(methods, &obj, str1).run();
 
   REQUIRE_THROWS_MATCHES(future.get(), async::aggregate_error, Catch::Matchers::Message(aggregate_error_message));
 }
@@ -125,7 +117,7 @@ TEST_CASE("Make any with class method all error void string", "[make promise any
 
 TEST_CASE("Make any with class method string void", "[make promise any]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<std::string(test_struct::*)() const> methods
   {
@@ -133,7 +125,7 @@ TEST_CASE("Make any with class method string void", "[make promise any]")
     &test_struct::string_void2,
   };
 
-  auto future = async::make_promise_any(methods, &test).run();
+  auto future = async::make_promise_any(methods, &obj).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -143,7 +135,7 @@ TEST_CASE("Make any with class method string void", "[make promise any]")
 
 TEST_CASE("Make any with class method error string void", "[make promise any]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<std::string(test_struct::*)() const> methods
   {
@@ -151,7 +143,7 @@ TEST_CASE("Make any with class method error string void", "[make promise any]")
     &test_struct::string_void1,
   };
 
-  auto future = async::make_promise_any(methods, &test).run();
+  auto future = async::make_promise_any(methods, &obj).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -161,7 +153,7 @@ TEST_CASE("Make any with class method error string void", "[make promise any]")
 
 TEST_CASE("Make any with class method all error string void", "[make promise any]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<std::string(test_struct::*)() const> methods
   {
@@ -169,14 +161,14 @@ TEST_CASE("Make any with class method all error string void", "[make promise any
     &test_struct::error_string_void,
   };
 
-  auto future = async::make_promise_any(methods, &test).run();
+  auto future = async::make_promise_any(methods, &obj).run();
   REQUIRE_THROWS_MATCHES(future.get(), async::aggregate_error, Catch::Matchers::Message(aggregate_error_message));
 }
 
 
 TEST_CASE("Make any with class method string string", "[make promise any]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<std::string(test_struct::*)(std::string) const> methods
   {
@@ -184,7 +176,7 @@ TEST_CASE("Make any with class method string string", "[make promise any]")
     &test_struct::string_string2,
   };
 
-  auto future = async::make_promise_any(methods, &test, str1).run();
+  auto future = async::make_promise_any(methods, &obj, str1).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -194,15 +186,15 @@ TEST_CASE("Make any with class method string string", "[make promise any]")
 
 TEST_CASE("Make any with class method error string string", "[make promise any]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<std::string(test_struct::*)(std::string) const> methods
   {
     &test_struct::error_string_string,
-    &test_struct::string_string,
+        &test_struct::string_string1,
   };
 
-  auto future = async::make_promise_any(methods, &test, str1).run();
+  auto future = async::make_promise_any(methods, &obj, str1).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -212,7 +204,7 @@ TEST_CASE("Make any with class method error string string", "[make promise any]"
 
 TEST_CASE("Make any with class method all error string string", "[make promise any]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<std::string(test_struct::*)(std::string) const> methods
   {
@@ -220,7 +212,7 @@ TEST_CASE("Make any with class method all error string string", "[make promise a
     &test_struct::error_string_string,
   };
 
-  auto future = async::make_promise_any(methods, &test, str1).run();
+  auto future = async::make_promise_any(methods, &obj, str1).run();
   REQUIRE_THROWS_MATCHES(future.get(), async::aggregate_error, Catch::Matchers::Message(aggregate_error_message));
 }
 
@@ -230,8 +222,8 @@ TEST_CASE("Make any with func void void", "[make promise any]")
 {
   std::vector<void(*)()> funcs
   {
-    [] () {},
-    [] () {},
+    void_void,
+    void_void,
   };
 
   auto future = async::make_promise_any(funcs).run();
@@ -244,8 +236,8 @@ TEST_CASE("Make any with func error void void", "[make promise any]")
 {
   std::vector<void(*)()> funcs
   {
-    [] () { throw std::runtime_error{str2}; },
-    [] () {},
+    void_void,
+    error_void_void,
   };
 
   auto future = async::make_promise_any(funcs).run();
@@ -258,8 +250,8 @@ TEST_CASE("Make any with func all error void void", "[make promise any]")
 {
   std::vector<void(*)()> funcs
   {
-    [] () { throw std::runtime_error{str1}; },
-    [] () { throw std::runtime_error{str2}; },
+    error_void_void,
+    error_void_void,
   };
 
   auto future = async::make_promise_any(funcs).run();
@@ -272,8 +264,8 @@ TEST_CASE("Make any with func void string", "[make promise any]")
 {
   std::vector<void(*)(std::string)> funcs
   {
-    [] (std::string) {},
-    [] (std::string) {},
+    void_string,
+    void_string,
   };
 
   auto future = async::make_promise_any(funcs, str1).run();
@@ -286,8 +278,8 @@ TEST_CASE("Make any with func error void string", "[make promise any]")
 {
   std::vector<void(*)(std::string)> funcs
   {
-    [] (std::string) { throw std::runtime_error{str2}; },
-    [] (std::string) {},
+    void_string,
+    error_void_string,
   };
 
   auto future = async::make_promise_any(funcs, str1).run();
@@ -300,8 +292,8 @@ TEST_CASE("Make any with func all error void string", "[make promise any]")
 {
   std::vector<void(*)(std::string)> funcs
   {
-    [] (std::string) { throw std::runtime_error{str1}; },
-    [] (std::string) { throw std::runtime_error{str2}; },
+    error_void_string,
+    error_void_string,
   };
 
   auto future = async::make_promise_any(funcs, str1).run();
@@ -314,8 +306,8 @@ TEST_CASE("Make any with func string void", "[make promise any]")
 {
   std::vector<std::string(*)()> funcs
   {
-    [] () { return std::string{str1}; },
-    [] () { return std::string{str2}; },
+    string_void1,
+    string_void1,
   };
 
   auto future = async::make_promise_any(funcs).run();
@@ -330,8 +322,8 @@ TEST_CASE("Make any with func error string void", "[make promise any]")
 {
   std::vector<std::string(*)()> funcs
   {
-    [] () -> std::string { throw std::runtime_error{str2}; },
-    [] () { return std::string{str1}; },
+    string_void1,
+    error_string_void,
   };
 
   auto future = async::make_promise_any(funcs).run();
@@ -346,8 +338,8 @@ TEST_CASE("Make any with func all error string void", "[make promise any]")
 {
   std::vector<std::string(*)()> funcs
   {
-    [] () -> std::string { throw std::runtime_error{str1}; },
-    [] () -> std::string { throw std::runtime_error{str2}; },
+    error_string_void,
+    error_string_void,
   };
 
   auto future = async::make_promise_any(funcs).run();
@@ -359,8 +351,8 @@ TEST_CASE("Make any with func string string", "[make promise any]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
-    [] (std::string str) { return std::string{str1}; },
-    [] (std::string str) { return std::string{str2}; },
+    string_string1,
+    string_string2,
   };
 
   auto future = async::make_promise_any(funcs, str1).run();
@@ -375,8 +367,8 @@ TEST_CASE("Make any with func error string string", "[make promise any]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
-    [] (std::string str) -> std::string { throw std::runtime_error{str2}; },
-    [] (std::string str) { return std::string{str1}; },
+    string_string1,
+    error_string_string,
   };
 
   auto future = async::make_promise_any(funcs, str1).run();
@@ -391,8 +383,8 @@ TEST_CASE("Make any with func all error string string", "[make promise any]")
 {
   std::vector<std::string(*)(std::string)> funcs
   {
-    [] (std::string str) -> std::string { throw std::runtime_error{str1}; },
-    [] (std::string str) -> std::string { throw std::runtime_error{str2}; },
+    error_string_string,
+    error_string_string,
   };
 
   auto future = async::make_promise_any(funcs, str1).run();

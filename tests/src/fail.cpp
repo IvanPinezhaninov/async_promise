@@ -15,21 +15,15 @@
 **
 ******************************************************************************/
 
-// async_promise
-#include <async_promise.hpp>
-
-// catch2
-#include <catch2/catch_test_macros.hpp>
-
 // local
 #include "common.h"
 
 
 TEST_CASE("Fail with class method void void", "[fail]")
 {
-  test_struct test;
+  test_struct obj;
   auto future = async::make_rejected_promise(std::runtime_error{str2})
-                .fail(&test_struct::void_void, &test).run();
+                .fail(&test_struct::void_void, &obj).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -37,9 +31,9 @@ TEST_CASE("Fail with class method void void", "[fail]")
 
 TEST_CASE("Fail with class method void exception", "[fail]")
 {
-  test_struct test;
+  test_struct obj;
   auto future = async::make_rejected_promise(std::runtime_error{str2})
-                .fail(&test_struct::void_exception, &test).run();
+                .fail(&test_struct::void_exception, &obj).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -47,9 +41,9 @@ TEST_CASE("Fail with class method void exception", "[fail]")
 
 TEST_CASE("Fail with class method string void", "[fail]")
 {
-  test_struct test;
+  test_struct obj;
   auto future = async::make_rejected_promise<std::string>(std::runtime_error{str2})
-                .fail(&test_struct::string_void1, &test).run();
+                .fail(&test_struct::string_void1, &obj).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -57,9 +51,9 @@ TEST_CASE("Fail with class method string void", "[fail]")
 
 TEST_CASE("Fail with class method string exception", "[fail]")
 {
-  test_struct test;
+  test_struct obj;
   auto future = async::make_rejected_promise<std::string>(std::runtime_error{str2})
-                .fail(&test_struct::string_exception, &test).run();
+                .fail(&test_struct::string_exception, &obj).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -83,7 +77,7 @@ TEST_CASE("Fail with func void exception", "[fail]")
 
 TEST_CASE("Fail with func string void", "[fail]")
 {
-  auto future = async::make_rejected_promise<std::string>(std::runtime_error{str2}).fail(string_void).run();
+  auto future = async::make_rejected_promise<std::string>(std::runtime_error{str2}).fail(string_void1).run();
 
   REQUIRE_NOTHROW(future.get());
 }

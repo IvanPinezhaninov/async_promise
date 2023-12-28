@@ -26,11 +26,19 @@ struct test_struct final
 {
   void void_void() const;
 
+  void void_void_delayed() const;
+
   void error_void_void() const;
+
+  void error_void_void_delayed() const;
 
   void void_string(std::string str) const;
 
+  void void_string_delayed(std::string str) const;
+
   void error_void_string(std::string str) const;
+
+  void error_void_string_delayed(std::string str) const;
 
   void void_exception(std::exception_ptr e) const;
 
@@ -38,15 +46,21 @@ struct test_struct final
 
   std::string string_void2() const;
 
+  std::string string_void_delayed() const;
+
   std::string error_string_void() const;
 
-  std::string string_string(std::string str) const;
+  std::string error_string_void_delayed() const;
 
   std::string string_string1(std::string str) const;
 
   std::string string_string2(std::string str) const;
 
+  std::string string_string_delayed(std::string str) const;
+
   std::string error_string_string(std::string str) const;
+
+  std::string error_string_string_delayed(std::string str) const;
 
   std::string string_exception(std::exception_ptr e) const;
 };

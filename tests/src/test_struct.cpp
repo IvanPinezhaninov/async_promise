@@ -1,5 +1,7 @@
 // stl
+#include <chrono>
 #include <stdexcept>
+#include <thread>
 
 // local
 #include "constants.h"
@@ -10,8 +12,21 @@ void test_struct::void_void() const
 {}
 
 
+void test_struct::void_void_delayed() const
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(delay_length));
+}
+
+
 void test_struct::error_void_void() const
 {
+  throw std::runtime_error{str2};
+}
+
+
+void test_struct::error_void_void_delayed() const
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(delay_length));
   throw std::runtime_error{str2};
 }
 
@@ -20,8 +35,21 @@ void test_struct::void_string(std::string str) const
 {}
 
 
+void test_struct::void_string_delayed(std::string str) const
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(delay_length));
+}
+
+
 void test_struct::error_void_string(std::string str) const
 {
+  throw std::runtime_error{str2};
+}
+
+
+void test_struct::error_void_string_delayed(std::string str) const
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(delay_length));
   throw std::runtime_error{str2};
 }
 
@@ -42,15 +70,23 @@ std::string test_struct::string_void2() const
 }
 
 
+std::string test_struct::string_void_delayed() const
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(delay_length));
+  return str1;
+}
+
+
 std::string test_struct::error_string_void() const
 {
   throw std::runtime_error{str2};
 }
 
 
-std::string test_struct::string_string(std::string str) const
+std::string test_struct::error_string_void_delayed() const
 {
-  return str;
+  std::this_thread::sleep_for(std::chrono::milliseconds(delay_length));
+  throw std::runtime_error{str2};
 }
 
 
@@ -66,8 +102,22 @@ std::string test_struct::string_string2(std::string str) const
 }
 
 
+std::string test_struct::string_string_delayed(std::string str) const
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(delay_length));
+  return str1;
+}
+
+
 std::string test_struct::error_string_string(std::string str) const
 {
+  throw std::runtime_error{str2};
+}
+
+
+std::string test_struct::error_string_string_delayed(std::string str) const
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(delay_length));
   throw std::runtime_error{str2};
 }
 

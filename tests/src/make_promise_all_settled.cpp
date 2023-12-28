@@ -15,19 +15,12 @@
 **
 ******************************************************************************/
 
-// async_promise
-#include <async_promise.hpp>
-
-// catch2
-#include <catch2/matchers/catch_matchers_exception.hpp>
-#include <catch2/catch_test_macros.hpp>
-
 // local
 #include "common.h"
 
 TEST_CASE("Make all settled with class method void void", "[make promise all settled]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<void(test_struct::*)() const> methods
   {
@@ -35,7 +28,7 @@ TEST_CASE("Make all settled with class method void void", "[make promise all set
     &test_struct::void_void,
   };
 
-  auto future = async::make_promise_all_settled(methods, &test).run();
+  auto future = async::make_promise_all_settled(methods, &obj).run();
 
   std::vector<async::settled<void>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -48,7 +41,7 @@ TEST_CASE("Make all settled with class method void void", "[make promise all set
 
 TEST_CASE("Make all settled with class method error void void", "[make promise all settled]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<void(test_struct::*)() const> methods
   {
@@ -56,7 +49,7 @@ TEST_CASE("Make all settled with class method error void void", "[make promise a
     &test_struct::error_void_void,
   };
 
-  auto future = async::make_promise_all_settled(methods, &test).run();
+  auto future = async::make_promise_all_settled(methods, &obj).run();
 
   std::vector<async::settled<void>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -70,7 +63,7 @@ TEST_CASE("Make all settled with class method error void void", "[make promise a
 
 TEST_CASE("Make all settled with class method void string", "[make promise all settled]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<void(test_struct::*)(std::string) const> methods
   {
@@ -78,7 +71,7 @@ TEST_CASE("Make all settled with class method void string", "[make promise all s
     &test_struct::void_string,
   };
 
-  auto future = async::make_promise_all_settled(methods, &test, str1).run();
+  auto future = async::make_promise_all_settled(methods, &obj, str1).run();
 
   std::vector<async::settled<void>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -91,7 +84,7 @@ TEST_CASE("Make all settled with class method void string", "[make promise all s
 
 TEST_CASE("Make all settled with class method error void string", "[make promise all settled]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<void(test_struct::*)(std::string) const> methods
   {
@@ -99,7 +92,7 @@ TEST_CASE("Make all settled with class method error void string", "[make promise
     &test_struct::error_void_string,
   };
 
-  auto future = async::make_promise_all_settled(methods, &test, str1).run();
+  auto future = async::make_promise_all_settled(methods, &obj, str1).run();
 
   std::vector<async::settled<void>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -113,7 +106,7 @@ TEST_CASE("Make all settled with class method error void string", "[make promise
 
 TEST_CASE("Make all settled with class method string void", "[make promise all settled]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<std::string(test_struct::*)() const> methods
   {
@@ -121,7 +114,7 @@ TEST_CASE("Make all settled with class method string void", "[make promise all s
     &test_struct::string_void2,
   };
 
-  auto future = async::make_promise_all_settled(methods, &test).run();
+  auto future = async::make_promise_all_settled(methods, &obj).run();
 
   std::vector<async::settled<std::string>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -136,7 +129,7 @@ TEST_CASE("Make all settled with class method string void", "[make promise all s
 
 TEST_CASE("Make all settled with class method error string void", "[make promise all settled]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<std::string(test_struct::*)() const> methods
   {
@@ -144,7 +137,7 @@ TEST_CASE("Make all settled with class method error string void", "[make promise
     &test_struct::error_string_void,
   };
 
-  auto future = async::make_promise_all_settled(methods, &test).run();
+  auto future = async::make_promise_all_settled(methods, &obj).run();
 
   std::vector<async::settled<std::string>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -159,7 +152,7 @@ TEST_CASE("Make all settled with class method error string void", "[make promise
 
 TEST_CASE("Make all settled with class method string string", "[make promise all settled]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<std::string(test_struct::*)(std::string) const> methods
   {
@@ -167,7 +160,7 @@ TEST_CASE("Make all settled with class method string string", "[make promise all
     &test_struct::string_string2,
   };
 
-  auto future = async::make_promise_all_settled(methods, &test, str1).run();
+  auto future = async::make_promise_all_settled(methods, &obj, str1).run();
 
   std::vector<async::settled<std::string>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -182,15 +175,15 @@ TEST_CASE("Make all settled with class method string string", "[make promise all
 
 TEST_CASE("Make all settled with class method error string string", "[make promise all settled]")
 {
-  test_struct test;
+  test_struct obj;
 
   std::vector<std::string(test_struct::*)(std::string) const> methods
   {
-    &test_struct::string_string,
+    &test_struct::string_string1,
     &test_struct::error_string_string
   };
 
-  auto future = async::make_promise_all_settled(methods, &test, str1).run();
+  auto future = async::make_promise_all_settled(methods, &obj, str1).run();
 
   std::vector<async::settled<std::string>> res;
   REQUIRE_NOTHROW(res = future.get());
@@ -208,8 +201,8 @@ TEST_CASE("Make all settled with func void void", "[make promise all settled]")
 {
   std::vector<void(*)()> funcs
   {
-    [] () {},
-    [] () {},
+    void_void,
+    void_void,
   };
 
   auto future = async::make_promise_all_settled(funcs).run();
@@ -227,8 +220,8 @@ TEST_CASE("Make all settled with func error void void", "[make promise all settl
 {
   std::vector<void(*)()> funcs
   {
-    [] () {},
-    [] () { throw std::runtime_error{str2}; },
+    void_void,
+    error_void_void,
   };
 
   auto future = async::make_promise_all_settled(funcs).run();
@@ -247,8 +240,8 @@ TEST_CASE("Make all settled with func void string", "[make promise all settled]"
 {
   std::vector<void(*)(std::string)> funcs
   {
-    [] (std::string) {},
-    [] (std::string) {},
+    void_string,
+    void_string,
   };
 
   auto future = async::make_promise_all_settled(funcs, str1).run();
@@ -266,8 +259,8 @@ TEST_CASE("Make all settled with func error void string", "[make promise all set
 {
   std::vector<void(*)(std::string)> funcs
   {
-    [] (std::string) {},
-    [] (std::string) { throw std::runtime_error{str2}; },
+    void_string,
+    error_void_string,
   };
 
   auto future = async::make_promise_all_settled(funcs, str1).run();
@@ -286,8 +279,8 @@ TEST_CASE("Make all settled with func string void", "[make promise all settled]"
 {
   std::vector<std::string(*)()> funcs
   {
-    [] () { return std::string{str1}; },
-    [] () { return std::string{str2}; },
+    string_void1,
+    string_void2,
   };
 
   auto future = async::make_promise_all_settled(funcs).run();
@@ -307,8 +300,8 @@ TEST_CASE("Make all settled with func error string void", "[make promise all set
 {
   std::vector<std::string(*)()> funcs
   {
-    [] () { return std::string{str1}; },
-    [] () -> std::string { throw std::runtime_error{str2}; },
+    string_void1,
+    error_string_void,
   };
 
   auto future = async::make_promise_all_settled(funcs).run();
@@ -328,8 +321,8 @@ TEST_CASE("Make all settled with func string string", "[make promise all settled
 {
   std::vector<std::string(*)(std::string)> funcs
   {
-    [] (std::string str) { return std::string{str1}; },
-    [] (std::string str) { return std::string{str2}; },
+    string_string1,
+    string_string2,
   };
 
   auto future = async::make_promise_all_settled(funcs, str1).run();
@@ -349,8 +342,8 @@ TEST_CASE("Make all settled with func error string string", "[make promise all s
 {
   std::vector<std::string(*)(std::string)> funcs
   {
-    [] (std::string str) { return std::string{str1}; },
-    [] (std::string str) -> std::string { throw std::runtime_error{str2}; },
+    string_string1,
+    error_string_string,
   };
 
   auto future = async::make_promise_all_settled(funcs, str1).run();

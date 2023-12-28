@@ -24,21 +24,41 @@
 
 void void_void();
 
+void void_void_delayed();
+
 void error_void_void();
+
+void error_void_void_delayed();
 
 void void_string(std::string str);
 
+void void_string_delayed(std::string str);
+
 void error_void_string(std::string str);
+
+void error_void_string_delayed(std::string str);
 
 void void_exception(std::exception_ptr e);
 
-std::string string_void();
+std::string string_void1();
+
+std::string string_void2();
+
+std::string string_void_delayed();
 
 std::string error_string_void();
 
-std::string string_string(std::string str);
+std::string error_string_void_delayed();
+
+std::string string_string1(std::string str);
+
+std::string string_string2(std::string str);
+
+std::string string_string_delayed(std::string str);
 
 std::string error_string_string(std::string str);
+
+std::string error_string_string_delayed(std::string str);
 
 std::string string_exception(std::exception_ptr e);
 

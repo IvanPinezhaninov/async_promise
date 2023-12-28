@@ -19,6 +19,7 @@
 #define CONSTANTS_H
 
 static constexpr auto aggregate_error_message = "All functions rejected";
+static constexpr auto delay_length = 100;
 static constexpr auto str1 = "Hello World!";
 static constexpr auto str2 = "Hello Universe!";
 

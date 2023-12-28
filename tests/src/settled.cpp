@@ -15,13 +15,6 @@
 **
 ******************************************************************************/
 
-// async_promise
-#include <async_promise.hpp>
-
-// catch2
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_exception.hpp>
-
 // local
 #include "common.h"
 

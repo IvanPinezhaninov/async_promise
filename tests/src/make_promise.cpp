@@ -15,21 +15,14 @@
 **
 ******************************************************************************/
 
-// async_promise
-#include <async_promise.hpp>
-
-// catch2
-#include <catch2/matchers/catch_matchers_exception.hpp>
-#include <catch2/catch_test_macros.hpp>
-
 // local
 #include "common.h"
 
 
 TEST_CASE("Make promise with class method void void", "[make promise]")
 {
-  test_struct test;
-  auto future = async::make_promise(&test_struct::void_void, &test).run();
+  test_struct obj;
+  auto future = async::make_promise(&test_struct::void_void, &obj).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -37,8 +30,8 @@ TEST_CASE("Make promise with class method void void", "[make promise]")
 
 TEST_CASE("Make promise with class method error void void", "[make promise]")
 {
-  test_struct test;
-  auto future = async::make_promise(&test_struct::error_void_void, &test).run();
+  test_struct obj;
+  auto future = async::make_promise(&test_struct::error_void_void, &obj).run();
 
   REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
 }
@@ -46,8 +39,8 @@ TEST_CASE("Make promise with class method error void void", "[make promise]")
 
 TEST_CASE("Make promise with class method void string", "[make promise]")
 {
-  test_struct test;
-  auto future = async::make_promise(&test_struct::void_string, &test, str1).run();
+  test_struct obj;
+  auto future = async::make_promise(&test_struct::void_string, &obj, str1).run();
 
   REQUIRE_NOTHROW(future.get());
 }
@@ -55,8 +48,8 @@ TEST_CASE("Make promise with class method void string", "[make promise]")
 
 TEST_CASE("Make promise with class method error void string", "[make promise]")
 {
-  test_struct test;
-  auto future = async::make_promise(&test_struct::error_void_string, &test, str1).run();
+  test_struct obj;
+  auto future = async::make_promise(&test_struct::error_void_string, &obj, str1).run();
 
   REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
 }
@@ -64,8 +57,8 @@ TEST_CASE("Make promise with class method error void string", "[make promise]")
 
 TEST_CASE("Make promise with class method string void", "[make promise]")
 {
-  test_struct test;
-  auto future = async::make_promise(&test_struct::string_void1, &test).run();
+  test_struct obj;
+  auto future = async::make_promise(&test_struct::string_void1, &obj).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -75,8 +68,8 @@ TEST_CASE("Make promise with class method string void", "[make promise]")
 
 TEST_CASE("Make promise with class method error string void", "[make promise]")
 {
-  test_struct test;
-  auto future = async::make_promise(&test_struct::error_string_void, &test).run();
+  test_struct obj;
+  auto future = async::make_promise(&test_struct::error_string_void, &obj).run();
 
   REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
 }
@@ -84,8 +77,8 @@ TEST_CASE("Make promise with class method error string void", "[make promise]")
 
 TEST_CASE("Make promise with class method string string", "[make promise]")
 {
-  test_struct test;
-  auto future = async::make_promise(&test_struct::string_string, &test, str1).run();
+  test_struct obj;
+  auto future = async::make_promise(&test_struct::string_string1, &obj, str1).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -95,8 +88,8 @@ TEST_CASE("Make promise with class method string string", "[make promise]")
 
 TEST_CASE("Make promise with class method error string string", "[make promise]")
 {
-  test_struct test;
-  auto future = async::make_promise(&test_struct::error_string_string, &test, str1).run();
+  test_struct obj;
+  auto future = async::make_promise(&test_struct::error_string_string, &obj, str1).run();
 
   REQUIRE_THROWS_MATCHES(future.get(), std::runtime_error, Catch::Matchers::Message(str2));
 }
@@ -136,7 +129,7 @@ TEST_CASE("Make promise with func error void string", "[make promise]")
 
 TEST_CASE("Make promise with func string void", "[make promise]")
 {
-  auto future = async::make_promise(string_void).run();
+  auto future = async::make_promise(string_void1).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());
@@ -154,7 +147,7 @@ TEST_CASE("Make promise with func error string void", "[make promise]")
 
 TEST_CASE("Make promise with func string string", "[make promise]")
 {
-  auto future = async::make_promise(string_string, str1).run();
+  auto future = async::make_promise(string_string1, str1).run();
 
   std::string res;
   REQUIRE_NOTHROW(res = future.get());

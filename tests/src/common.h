@@ -18,6 +18,19 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+// stl
+#include <stdexcept>
+
+// async_promise
+#include <async_promise.hpp>
+
+// catch2
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
+#include <catch2/matchers/catch_matchers_range_equals.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
+
+// local
 #include "constants.h"
 #include "test_funcs.h"
 #include "test_struct.h"
