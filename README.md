@@ -8,25 +8,23 @@
 
 C++11 header-only library based on Promises/A+
 
-The library is designed to create and run a chain of functions. The chain runs asynchronously and returns `std::future`. The library supports the `resolve`, `reject`, `then`, `all`, `all_settled`, `any`, `race`, `fail` and `finally` methods
+The library is designed to create and run a chain of functions or class methods. The chain runs asynchronously and returns `std::future`. The library supports the methods `resolve`, `reject`, `then`, `all`, `all_settled`, `any`, `race`, `fail` and `finally`
 
 ## Documentation
 
-To create an `async::promise` object use the `async::make_promise` static function which takes as argument a function with optional arguments
+To create an `async::promise` object use the static function `async::make_promise`, which takes as an argument a function with optional arguments
 ```cpp
 auto promise = async::make_promise([] (int a, int b) { return a + b; }, 2, 2);
 ```
 
 To start the execution of a chain of function calls use the `run` method which returns `std::future`
-
 ```cpp
 auto future = async::make_promise([] { return 2; }).run();
 
 std::cout << future.get() << std::endl; // prints 2
 ```
 
-To add the next function to a chain use the `then` method which takes as an argument a function whose argument is of the same type as that returned by the previous function in the chain
-
+To add the next function to a chain use the `then` method which takes as an argument a function with an argument of the same type as the return value of the previous function in the chain
 ```cpp
 auto future = async::make_promise([] { return 2; })
               .then([] (int x) { return x * 2; })
@@ -36,7 +34,6 @@ std::cout << future.get() << std::endl; // prints 4
 ```
 
 If the `then` method does not need to process the value returned by the previous function, then it is allowed to pass a function that does not take an argument
-
 ```cpp
 auto future = async::make_promise([] { return 2; })
               .then([] { return 4; })
@@ -46,7 +43,6 @@ std::cout << future.get() << std::endl; // prints 4
 ```
 
 The `all` method accepts an iterable of functions. Each function asynchronously processes the return value of the previous function. When all functions have completed, the method will return an iterable with the results of functions in the same order as the functions in the incoming iterable. If an error occurs while executing functions it will be thrown
-
 ```cpp
 std::vector<int(*)(int)> funcs
 {
@@ -63,8 +59,7 @@ for (const auto& result : results)
   std::cout << result << std::endl;
 ```
 
-You can also create a promise object using the `async::make_promise_all` static function
-
+It is also possible to create a promise object using the static function `async::make_promise_all`
 ```cpp
 std::vector<int(*)(int)> funcs
 {
@@ -80,8 +75,7 @@ for (const auto& result : results)
   std::cout << result << std::endl;
 ```
 
-The `all_settled` method accepts an iterable of functions. Each function asynchronously processes the return value of the previous function. When all functions have completed, the method will return an iterable with a special settled object that contains either a result or an error of functions in the same order as the functions in the incoming iterable.
-
+The `all_settled` method accepts an iterable of functions. Each function asynchronously processes the return value of the previous function. When all functions have completed, the method will return an iterable with a special `settled` object that contains either a result or an error of functions in the same order as the functions in the incoming iterable
 ```cpp
 std::vector<int(*)(int)> funcs
 {
@@ -115,8 +109,7 @@ for (const auto& result : results)
 }
 ```
 
-You can also create a promise object using the `async::make_promise_all_settled` static function
-
+It is also possible to create a promise object using the static function `async::make_promise_all_settled`
 ```cpp
 std::vector<int(*)(int)> funcs
 {
@@ -150,7 +143,6 @@ for (const auto& result : results)
 ```
 
 The `any` method accepts an iterable of functions. Each function asynchronously processes the return value of the previous function. The result of the method will be the result of the first function that completes successfully. If all functions fail, an `async::aggregate_error` exception will be thrown
-
 ```cpp
 std::vector<int(*)(int)> funcs
 {
@@ -165,8 +157,7 @@ auto future = async::make_promise([] { return 2; })
 std::cout << future.get() << std::endl; // prints 4
 ```
 
-You can also create a promise object using the `async::make_promise_any` static function
-
+It is also possible to create a promise object using the static function `async::make_promise_any`
 ```cpp
 std::vector<int(*)(int)> funcs
 {
@@ -181,7 +172,6 @@ std::cout << future.get() << std::endl; // prints 4
 ```
 
 The `race` method accepts an iterable of functions. Each function asynchronously processes the return value of the previous function. The result of the method will be the result or error of the first completed function
-
 ```cpp
 std::vector<int(*)(int)> funcs
 {
@@ -203,8 +193,7 @@ catch (const std::exception& e)
 }
 ```
 
-You can also create a promise object using the `async::make_promise_race` static function
-
+It is also possible to create a promise object using the static function `async::make_promise_race`
 ```cpp
 std::vector<int(*)(int)> funcs
 {
@@ -226,7 +215,6 @@ catch (const std::exception& e)
 ```
 
 In the `all`, `all_settled`, `any` and `race` methods it is allowed to use iterable with functions without an argument if it is not necessary to process the value returned by the previous function
-
 ```cpp
 std::vector<int(*)()> funcs
 {
@@ -243,14 +231,8 @@ for (const auto& result : results)
   std::cout << result << std::endl;
 ```
 
-Catching exceptions thrown in previously called functions is done by adding a `fail` method to the chain, which takes as an argument a function whose argument is of type `std::exception_ptr` and returns a value of the same type as the previously called function. If the previous functions were executed without errors, then the method is free to pass through itself the value calculated by the previous function. If an exception was thrown in one of the previous functions, it can be handled using the function passed to the `fail` method
-
+Catching exceptions thrown in previously called functions is done by adding a `fail` method to the chain, which takes as an argument a function with an argument of type `std::exception_ptr` and returns a value of the same type as the previously called function. If the previous functions were executed without errors, then the method will return the result of the previous function
 ```cpp
-static int error()
-{
-  throw std::runtime_error{"I'm an error"};
-}
-
 static int error_handler(const std::exception_ptr& e)
 {
   try
@@ -267,7 +249,7 @@ static int error_handler(const std::exception_ptr& e)
   }
 }
 
-auto future = async::make_promise(error)
+auto future = async::make_promise([] { throw std::runtime_error{"I'm an error!"}; })
               .fail(error_handler)
               .run();
 
@@ -275,7 +257,6 @@ std::cout << future.get() << std::endl; // prints -1
 ```
 
 If the `fail` method does not need to handle a previously thrown exception, it is allowed to pass a function without an argument to the `fail` method
-
 ```cpp
 static int error()
 {
@@ -294,8 +275,7 @@ auto future = async::make_promise(error)
 std::cout << future.get() << std::endl; // prints -1
 ```
 
-To add the next function to a chain that will be called on both resolved and rejected use the `finally` method
-
+To add the next function to a chain that will be called on both resolved and rejected states, use the `finally` method
 ```cpp
 auto future1 = async::make_promise([] {})
                .finally([] { return "Hello World!"; })
@@ -309,8 +289,23 @@ std::cout << future1.get() << std::endl; // prints "Hello World!"
 std::cout << future2.get() << std::endl; // prints "Hello World!"
 ```
 
-To create `async::promise` object with resolved state, use the `async::make_resolved_promise` static function
+In all the above cases, you can use overloaded functions that take a class method or an iterable of class methods and a class object
+```cpp
+my_class obj;
 
+std::vector<int(my_class::*)(int)> all_methods
+{
+  &my_class::method1,
+  &my_class::method2,
+};
+
+auto future = async::make_promise(&my_class::method, &obj)
+              .then(&my_class::then_method, &obj)
+              .all(std::move(all_methods), &obj)
+              .run();
+```
+
+To create `async::promise` object with resolved state, use the `async::make_resolved_promise` static function
 ```cpp
 auto future = async::make_resolved_promise(2)
               .run();
@@ -319,7 +314,6 @@ std::cout << future.get() << std::endl; // prints 2
 ```
 
 To create `async::promise` object with rejected state, use the `async::make_rejected_promise` static function
-
 ```cpp
 auto future = async::make_rejected_promise<int>(std::runtime_error{"I'm an error!"})
               .run();
