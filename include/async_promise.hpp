@@ -192,7 +192,8 @@ namespace internal
 template<std::size_t... indexes>
 struct index_sequence
 {
-  static std::size_t size() {
+  static std::size_t size()
+  {
     return sizeof...(indexes);
   }
 };
@@ -3497,12 +3498,13 @@ class promise
 
 
     /**
-     * @brief Run execution of a chain of functions
+     * @brief Run execution of a chain of the functions
+     * @param policy - Launch policy
      * @return Future with the result of execution
      */
-    std::future<T> run() const
+    std::future<T> run(std::launch policy = std::launch::async) const
     {
-      return std::async(std::launch::async, &promise<T>::run_impl, this, m_task);
+      return std::async(policy, &promise<T>::run_impl, this, m_task);
     }
 
   private:
