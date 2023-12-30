@@ -2896,7 +2896,7 @@ class promise
 
 
     /**
-     * @brief Constructor to create a promise object with an initial class method.
+     * @brief Constructor for creating a promise object with an initial class method.
      * @param method - Method for call.
      * @param obj - Object containing the required method.
      * @param args - Optional arguments.
@@ -2910,7 +2910,7 @@ class promise
 
 
     /**
-     * @brief Constructor to create a promise object with an initial function.
+     * @brief Constructor for creating a promise object with an initial function.
      * @param func - Initial function.
      * @param args - Optional arguments.
      */
@@ -3082,7 +3082,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of class methods to be called next.
+     * @brief Add an iterable of the class methods to be called next.
      *        Return either an iterable of results or the first rejection reason.
      * @param methods - Methods that receives the result of the previous function.
      * @param obj - Object containing the required methods.
@@ -3101,7 +3101,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of class methods to be called next.
+     * @brief Add an iterable of the class methods to be called next.
      *        Return either an iterable of results or the first rejection reason.
      * @param methods - Methods that not receives any result of the previous function.
      * @param obj - Object containing the required methods.
@@ -3119,7 +3119,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of class methods to be called next.
+     * @brief Add an iterable of the class methods to be called next.
      *        Return either an iterable of results or the first rejection reason.
      * @param methods - Methods that receives the result of the previous function.
      * @param obj - Object containing the required methods.
@@ -3137,7 +3137,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of class methods to be called next.
+     * @brief Add an iterable of the class methods to be called next.
      *        Return either an iterable of results or the first rejection reason.
      * @param methods - Methods that not receives any result of the previous function.
      * @param obj - Object containing the required methods.
@@ -3154,7 +3154,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of functions to be called next.
+     * @brief Add an iterable of the functions to be called next.
      *        Return either an iterable of results or the first rejection reason.
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
@@ -3172,7 +3172,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of functions to be called next.
+     * @brief Add an iterable of the functions to be called next.
      *        Return either an iterable of results or the first rejection reason.
      * @param funcs - Functions that not receives any result of the previous function.
      * @return Promise object.
@@ -3189,7 +3189,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of functions to be called next.
+     * @brief Add an iterable of the functions to be called next.
      *        Return either an iterable of results or the first rejection reason.
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
@@ -3206,7 +3206,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of functions to be called next.
+     * @brief Add an iterable of the functions to be called next.
      *        Return either an iterable of results or the first rejection reason.
      * @param funcs - Functions that not receives any result of the previous function.
      * @return Promise object.
@@ -3222,7 +3222,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of class methods to be called next.
+     * @brief Add an iterable of the class methods to be called next.
      *        Return an iterable of @ref settled objects with either a result or an error.
      * @param methods - Methods that receives the result of the previous function.
      * @param obj - Object containing the required methods.
@@ -3241,7 +3241,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of class methods to be called next.
+     * @brief Add an iterable of the class methods to be called next.
      *        Return an iterable of @ref settled objects with either a result or an error.
      * @param methods - Methods that receives the result of the previous function.
      * @param obj - Object containing the required methods.
@@ -3260,7 +3260,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of class methods to be called next.
+     * @brief Add an iterable of the class methods to be called next.
      *        Return an iterable of @ref settled objects with either a result or an error.
      * @param methods - Methods that receives the result of the previous function.
      * @param obj - Object containing the required methods.
@@ -3280,7 +3280,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of class methods to be called next.
+     * @brief Add an iterable of the class methods to be called next.
      *        Return an iterable of @ref settled objects with either a result or an error.
      * @param methods - Methods that receives the result of the previous function.
      * @param obj - Object containing the required methods.
@@ -3298,7 +3298,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of functions to be called next.
+     * @brief Add an iterable of the functions to be called next.
      *        Return an iterable of @ref settled objects with either a result or an error.
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
@@ -3316,7 +3316,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of functions to be called next.
+     * @brief Add an iterable of the functions to be called next.
      *        Return an iterable of @ref settled objects with either a result or an error.
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
@@ -3334,7 +3334,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of functions to be called next.
+     * @brief Add an iterable of the functions to be called next.
      *        Return an iterable of @ref settled objects with either a result or an error.
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
@@ -3353,7 +3353,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of functions to be called next.
+     * @brief Add an iterable of the functions to be called next.
      *        Return an iterable of @ref settled objects with either a result or an error.
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
@@ -3370,7 +3370,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of class methods to be called next.
+     * @brief Add an iterable of the class methods to be called next.
      *        Return the first resolved result.
      * @param methods - Methods that receives the result of the previous function.
      * @param obj - Object containing the required methods.
@@ -3387,7 +3387,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of class methods to be called next.
+     * @brief Add an iterable of the class methods to be called next.
      *        Return the first resolved result.
      * @param methods - Methods that not receives any result of the previous function.
      * @param obj - Object containing the required methods.
@@ -3403,7 +3403,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of functions to be called next.
+     * @brief Add an iterable of the functions to be called next.
      *        Return the first resolved result.
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
@@ -3419,7 +3419,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of functions to be called next.
+     * @brief Add an iterable of the functions to be called next.
      *        Return the first resolved result.
      * @param funcs - Functions that not receives any result of the previous function.
      * @return Promise object.
@@ -3434,7 +3434,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of class methods to be called next.
+     * @brief Add an iterable of the class methods to be called next.
      *        Return either the first resolved or rejected result.
      * @param methods - Methods that receives the result of the previous function.
      * @param obj - Object containing the required methods.
@@ -3451,7 +3451,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of class methods to be called next.
+     * @brief Add an iterable of the class methods to be called next.
      *        Return either the first resolved or rejected result.
      * @param methods - Methods that not receives any result of the previous function.
      * @param obj - Object containing the required methods.
@@ -3467,7 +3467,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of functions to be called next.
+     * @brief Add an iterable of the functions to be called next.
      *        Return either the first resolved or rejected result.
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
@@ -3483,7 +3483,7 @@ class promise
 
 
     /**
-     * @brief Add an iterable of functions to be called next.
+     * @brief Add an iterable of the functions to be called next.
      *        Return either the first resolved or rejected result.
      * @param funcs - Functions that not receives any result of the previous function.
      * @return Promise object.
@@ -3548,7 +3548,7 @@ static promise<Result> make_promise(Func&& func, Args&&... args)
 
 
 /**
- * @brief Make a promise with an iterable of class methods to be called.
+ * @brief Make a promise with an iterable of the class methods to be called.
  *        Return promise object with either an iterable of results or the first rejection reason.
  * @param methods - Methods.
  * @param obj - Object containing the required methods.
@@ -3569,7 +3569,7 @@ static promise<Result> make_promise_all(Container<Method, Allocator> methods, Cl
 
 
 /**
- * @brief Make a promise with an iterable of class methods to be called.
+ * @brief Make a promise with an iterable of the class methods to be called.
  *        Return promise object with either a void value or the first rejection reason.
  * @param methods - Methods.
  * @param obj - Object containing the required methods.
@@ -3589,7 +3589,7 @@ static promise<void> make_promise_all(Container<Method, Allocator> methods, Clas
 
 
 /**
- * @brief Make a promise with an iterable of functions to be called.
+ * @brief Make a promise with an iterable of the functions to be called.
  *        Return promise object with either an iterable of results or the first rejection reason.
  * @param funcs - Functions.
  * @param args - Optional arguments.
@@ -3607,7 +3607,7 @@ static promise<Result> make_promise_all(Container<Func, Allocator> funcs, Args&&
 
 
 /**
- * @brief Make a promise with an iterable of functions to be called.
+ * @brief Make a promise with an iterable of the functions to be called.
  *        Return promise object with either a void value or the first rejection reason.
  * @param funcs - Functions.
  * @param args - Optional arguments.
@@ -3624,7 +3624,7 @@ static promise<void> make_promise_all(Container<Func, Allocator> funcs, Args&&..
 
 
 /**
- * @brief Make a promise with an iterable of class methods to be called.
+ * @brief Make a promise with an iterable of the class methods to be called.
  *        Return an iterable of @ref settled objects with either a result or an error.
  * @param methods - Methods.
  * @param args - Optional arguments.
@@ -3642,7 +3642,7 @@ static promise<Result> make_promise_all_settled(Container<Method, Allocator> met
 
 
 /**
- * @brief Make a promise with an iterable of functions to be called.
+ * @brief Make a promise with an iterable of the functions to be called.
  *        Return an iterable of @ref settled objects with either a result or an error.
  * @param funcs - Functions.
  * @param args - Optional arguments.
@@ -3659,7 +3659,7 @@ static promise<Result> make_promise_all_settled(Container<Func, Allocator> funcs
 
 
 /**
- * @brief Make a promise with an iterable of class methods to be called.
+ * @brief Make a promise with an iterable of the class methods to be called.
  *        Return the first resolved result.
  * @param methods - Methods.
  * @param obj - Object containing the required methods.
@@ -3678,7 +3678,7 @@ static promise<Result> make_promise_any(Container<Method, Allocator> methods, Cl
 
 
 /**
- * @brief Make a promise with an iterable of functions to be called.
+ * @brief Make a promise with an iterable of the functions to be called.
  *        Return the first resolved result.
  * @param funcs - Functions.
  * @param args - Optional arguments.
@@ -3694,7 +3694,7 @@ static promise<Result> make_promise_any(Container<Func, Allocator> funcs, Args&&
 
 
 /**
- * @brief Make a promise with an iterable of class methods to be called.
+ * @brief Make a promise with an iterable of the class methods to be called.
  *        Return either the first resolved or rejected result.
  * @param methods - Methods.
  * @param obj - Object containing the required methods.
@@ -3713,7 +3713,7 @@ static promise<Result> make_promise_race(Container<Method, Allocator> methods, C
 
 
 /**
- * @brief Make a promise with an iterable of functions to be called.
+ * @brief Make a promise with an iterable of the functions to be called.
  *        Return either the first resolved or rejected result.
  * @param funcs - Functions.
  * @param args - Optional arguments.
