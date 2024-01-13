@@ -356,6 +356,29 @@ struct class_method_call_helper
 };
 
 
+template<typename Derived>
+class iterable_base
+{
+  protected:
+    void async_run()
+    {
+      auto futures = vector_helper::create_vector<std::future<void>>(iterable_size());
+      async_run(futures);
+    }
+
+    std::size_t iterable_size() const
+    {
+      return static_cast<const Derived*>(this)->iterable_size();
+    }
+
+  private:
+    void async_run(std::vector<std::future<void>>& futures)
+    {
+      static_cast<Derived*>(this)->async_run(futures);
+    }
+};
+
+
 template<typename Result, typename Method, typename Class, typename... Args>
 class initial_class_task final : public task<Result>
 {
@@ -761,18 +784,8 @@ class all_class_task<void, ParentResult, Container, Method, Allocator, Class> fi
       auto rv = this->m_parent->run();
       for (auto method : m_methods)
         futures.push_back(std::async(std::launch::async, std::move(method), m_obj, rv));
-
       for (auto& future : futures)
-      {
-        try
-        {
-          future.get();
-        }
-        catch(...)
-        {
-          std::rethrow_exception(std::current_exception());
-        }
-      }
+        future.get();
     }
 
   private:
@@ -831,18 +844,8 @@ class all_class_task_void<void, ParentResult, Container, Method, Allocator, Clas
       this->m_parent->run();
       for (auto method : m_methods)
         futures.push_back(std::async(std::launch::async, std::move(method), m_obj));
-
       for (auto& future : futures)
-      {
-        try
-        {
-          future.get();
-        }
-        catch(...)
-        {
-          std::rethrow_exception(std::current_exception());
-        }
-      }
+        future.get();
     }
 
   private:
@@ -896,18 +899,8 @@ class all_func_task<void, ParentResult, Container, Func, Allocator> final : publ
       auto rv = this->m_parent->run();
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, std::move(func), rv));
-
       for (auto& future : futures)
-      {
-        try
-        {
-          future.get();
-        }
-        catch(...)
-        {
-          std::rethrow_exception(std::current_exception());
-        }
-      }
+        future.get();
     }
 
   private:
@@ -960,18 +953,8 @@ class all_func_task_void<void, ParentResult, Container, Func, Allocator> final :
       this->m_parent->run();
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, std::move(func)));
-
       for (auto& future : futures)
-      {
-        try
-        {
-          future.get();
-        }
-        catch(...)
-        {
-          std::rethrow_exception(std::current_exception());
-        }
-      }
+        future.get();
     }
 
   private:
@@ -1315,8 +1298,8 @@ class all_settled_func_task_void<Result, ParentResult, void, Container, Func, Al
 };
 
 
-template<typename Result, typename ParentResult>
-class any_task_base : public next_task<Result, ParentResult>
+template<typename Derived, typename Result, typename ParentResult>
+class any_task_base : public iterable_base<Derived>, public next_task<Result, ParentResult>
 {
   public:
     any_task_base(task_ptr<ParentResult> parent)
@@ -1326,18 +1309,9 @@ class any_task_base : public next_task<Result, ParentResult>
     Result run() final
     {
       auto future = m_promise.get_future();
-      auto futures = vector_helper::create_vector<std::future<void>>(iterable_size());
-      m_errors.reserve(iterable_size());
-      async_run(futures);
-
-      try
-      {
-        return future.get();
-      }
-      catch(...)
-      {
-        std::rethrow_exception(std::current_exception());
-      }
+      m_errors.reserve(this->iterable_size());
+      this->async_run();
+      return future.get();
     }
 
   protected:
@@ -1346,7 +1320,7 @@ class any_task_base : public next_task<Result, ParentResult>
       std::lock_guard<std::mutex> lock{m_mutex};
 
       m_errors.push_back(std::move(err));
-      if (m_errors.size() < iterable_size())
+      if (m_errors.size() < this->iterable_size())
         return;
 
       promise_helper::reject(m_promise, std::make_exception_ptr(aggregate_error{std::move(m_errors)}));
@@ -1355,9 +1329,6 @@ class any_task_base : public next_task<Result, ParentResult>
     std::promise<Result> m_promise;
 
   private:
-    virtual void async_run(std::vector<std::future<void>>& futures) = 0;
-    virtual std::size_t iterable_size() const = 0;
-
     std::vector<std::exception_ptr> m_errors;
     std::mutex m_mutex;
 };
@@ -1365,22 +1336,21 @@ class any_task_base : public next_task<Result, ParentResult>
 
 template<typename Result, typename ParentResult, template<typename, typename> class Container,
          typename Method, typename Allocator, typename Class>
-class any_class_task final : public any_task_base<Result, ParentResult>
+class any_class_task final
+    : public any_task_base<any_class_task<Result, ParentResult, Container, Method, Allocator, Class>, Result, ParentResult>
 {
   public:
     any_class_task(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : any_task_base<Result, ParentResult>{std::move(parent)}
+      : any_task_base<any_class_task, Result, ParentResult>{std::move(parent)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       auto arg = this->m_parent->run();
-      using task = any_class_task<Result, ParentResult, Container, Method, Allocator, Class>;
       for (auto method : m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method), arg));
+        futures.push_back(std::async(std::launch::async, &any_class_task::call, this, std::move(method), arg));
     }
 
     void call(Method method, ParentResult arg)
@@ -1395,11 +1365,12 @@ class any_class_task final : public any_task_base<Result, ParentResult>
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_methods.size();
     }
 
+  private:
     Container<Method, Allocator> m_methods;
     Class* m_obj;
 };
@@ -1408,22 +1379,20 @@ class any_class_task final : public any_task_base<Result, ParentResult>
 template<typename ParentResult, template<typename, typename> class Container,
          typename Method, typename Allocator, typename Class>
 class any_class_task<void, ParentResult, Container, Method, Allocator, Class> final
-    : public any_task_base<void, ParentResult>
+    : public any_task_base<any_class_task<void, ParentResult, Container, Method, Allocator, Class>, void, ParentResult>
 {
   public:
     any_class_task(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : any_task_base<void, ParentResult>{std::move(parent)}
+      : any_task_base<any_class_task, void, ParentResult>{std::move(parent)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       auto arg = this->m_parent->run();
-      using task = any_class_task<void, ParentResult, Container, Method, Allocator, Class>;
       for (auto method : m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method), arg));
+        futures.push_back(std::async(std::launch::async, &any_class_task::call, this, std::move(method), arg));
     }
 
     void call(Method method, ParentResult arg)
@@ -1439,11 +1408,12 @@ class any_class_task<void, ParentResult, Container, Method, Allocator, Class> fi
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_methods.size();
     }
 
+  private:
     Container<Method, Allocator> m_methods;
     Class* m_obj;
 };
@@ -1451,22 +1421,21 @@ class any_class_task<void, ParentResult, Container, Method, Allocator, Class> fi
 
 template<typename Result, typename ParentResult, template<typename, typename> class Container,
          typename Method, typename Allocator, typename Class>
-class any_class_task_void final : public any_task_base<Result, ParentResult>
+class any_class_task_void final
+    : public any_task_base<any_class_task_void<Result, ParentResult, Container, Method, Allocator, Class>, Result, ParentResult>
 {
   public:
     any_class_task_void(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : any_task_base<Result, ParentResult>{std::move(parent)}
+      : any_task_base<any_class_task_void, Result, ParentResult>{std::move(parent)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       this->m_parent->run();
-      using task = any_class_task_void<Result, ParentResult, Container, Method, Allocator, Class>;
       for (auto method : m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method)));
+        futures.push_back(std::async(std::launch::async, &any_class_task_void::call, this, std::move(method)));
     }
 
     void call(Method method)
@@ -1481,11 +1450,12 @@ class any_class_task_void final : public any_task_base<Result, ParentResult>
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_methods.size();
     }
 
+  private:
     Container<Method, Allocator> m_methods;
     Class* m_obj;
 };
@@ -1494,22 +1464,20 @@ class any_class_task_void final : public any_task_base<Result, ParentResult>
 template<typename ParentResult, template<typename, typename> class Container,
          typename Method, typename Allocator, typename Class>
 class any_class_task_void<void, ParentResult, Container, Method, Allocator, Class> final
-    : public any_task_base<void, ParentResult>
+    : public any_task_base<any_class_task_void<void, ParentResult, Container, Method, Allocator, Class>, void, ParentResult>
 {
   public:
     any_class_task_void(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : any_task_base<void, ParentResult>{std::move(parent)}
+      : any_task_base<any_class_task_void, void, ParentResult>{std::move(parent)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       this->m_parent->run();
-      using task = any_class_task_void<void, ParentResult, Container, Method, Allocator, Class>;
       for (auto method : m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method)));
+        futures.push_back(std::async(std::launch::async, &any_class_task_void::call, this, std::move(method)));
     }
 
     void call(Method method)
@@ -1525,11 +1493,12 @@ class any_class_task_void<void, ParentResult, Container, Method, Allocator, Clas
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_methods.size();
     }
 
+  private:
     Container<Method, Allocator> m_methods;
     Class* m_obj;
 };
@@ -1537,21 +1506,20 @@ class any_class_task_void<void, ParentResult, Container, Method, Allocator, Clas
 
 template<typename Result, typename ParentResult,
          template<typename, typename> class Container, typename Func, typename Allocator>
-class any_func_task final : public any_task_base<Result, ParentResult>
+class any_func_task final
+    : public any_task_base<any_func_task<Result, ParentResult, Container, Func, Allocator>, Result, ParentResult>
 {
   public:
     any_func_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : any_task_base<Result, ParentResult>{std::move(parent)}
+      : any_task_base<any_func_task, Result, ParentResult>{std::move(parent)}
       , m_funcs{std::move(funcs)}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       auto arg = this->m_parent->run();
-      using task = any_func_task<Result, ParentResult, Container, Func, Allocator>;
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func), arg));
+        futures.push_back(std::async(std::launch::async, &any_func_task::call, this, std::move(func), arg));
     }
 
     void call(Func func, ParentResult arg)
@@ -1566,32 +1534,31 @@ class any_func_task final : public any_task_base<Result, ParentResult>
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_funcs.size();
     }
 
+  private:
     Container<Func, Allocator> m_funcs;
 };
 
 
 template<typename ParentResult, template<typename, typename> class Container, typename Func, typename Allocator>
 class any_func_task<void, ParentResult, Container, Func, Allocator> final
-    : public any_task_base<void, ParentResult>
+    : public any_task_base<any_func_task<void, ParentResult, Container, Func, Allocator>, void, ParentResult>
 {
   public:
     any_func_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : any_task_base<void, ParentResult>{std::move(parent)}
+      : any_task_base<any_func_task, void, ParentResult>{std::move(parent)}
       , m_funcs{std::move(funcs)}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       auto arg = this->m_parent->run();
-      using task = any_func_task<void, ParentResult, Container, Func, Allocator>;
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func), arg));
+        futures.push_back(std::async(std::launch::async, &any_func_task::call, this, std::move(func), arg));
     }
 
     void call(Func func, ParentResult arg)
@@ -1607,32 +1574,32 @@ class any_func_task<void, ParentResult, Container, Func, Allocator> final
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_funcs.size();
     }
 
+  private:
     Container<Func, Allocator> m_funcs;
 };
 
 
 template<typename Result, typename ParentResult,
          template<typename, typename> class Container, typename Func, typename Allocator>
-class any_func_task_void final : public any_task_base<Result, ParentResult>
+class any_func_task_void final
+    : public any_task_base<any_func_task_void<Result, ParentResult, Container, Func, Allocator>, Result, ParentResult>
 {
   public:
     any_func_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : any_task_base<Result, ParentResult>{std::move(parent)}
+      : any_task_base<any_func_task_void, Result, ParentResult>{std::move(parent)}
       , m_funcs{std::move(funcs)}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       this->m_parent->run();
-      using task = any_func_task_void<Result, ParentResult, Container, Func, Allocator>;
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func)));
+        futures.push_back(std::async(std::launch::async, &any_func_task_void::call, this, std::move(func)));
     }
 
     void call(Func func)
@@ -1647,32 +1614,31 @@ class any_func_task_void final : public any_task_base<Result, ParentResult>
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_funcs.size();
     }
 
+  private:
     Container<Func, Allocator> m_funcs;
 };
 
 
 template<typename ParentResult, template<typename, typename> class Container, typename Func, typename Allocator>
 class any_func_task_void<void, ParentResult, Container, Func, Allocator> final
-    : public any_task_base<void, ParentResult>
+    : public any_task_base<any_func_task_void<void, ParentResult, Container, Func, Allocator>, void, ParentResult>
 {
   public:
     any_func_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : any_task_base<void, ParentResult>{std::move(parent)}
+      : any_task_base<any_func_task_void, void, ParentResult>{std::move(parent)}
       , m_funcs{std::move(funcs)}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       this->m_parent->run();
-      using task = any_func_task_void<void, ParentResult, Container, Func, Allocator>;
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func)));
+        futures.push_back(std::async(std::launch::async, &any_func_task_void::call, this, std::move(func)));
     }
 
     void call(Func func)
@@ -1688,17 +1654,18 @@ class any_func_task_void<void, ParentResult, Container, Func, Allocator> final
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_funcs.size();
     }
 
+  private:
     Container<Func, Allocator> m_funcs;
 };
 
 
-template<typename Result, typename ParentResult>
-class race_task_base : public next_task<Result, ParentResult>
+template<typename Derived, typename Result, typename ParentResult>
+class race_task_base : public iterable_base<Derived>, public next_task<Result, ParentResult>
 {
   public:
     race_task_base(task_ptr<ParentResult> parent)
@@ -1708,46 +1675,32 @@ class race_task_base : public next_task<Result, ParentResult>
     Result run() final
     {
       auto future = m_promise.get_future();
-      auto futures = vector_helper::create_vector<std::future<void>>(iterable_size());
-      async_run(futures);
-
-      try
-      {
-        return future.get();
-      }
-      catch(...)
-      {
-        std::rethrow_exception(std::current_exception());
-      }
+      this->async_run();
+      return future.get();
     }
 
   protected:
     std::promise<Result> m_promise;
-
-  private:
-    virtual void async_run(std::vector<std::future<void>>& futures) = 0;
-    virtual std::size_t iterable_size() const = 0;
 };
 
 
 template<typename Result, typename ParentResult, template<typename, typename> class Container,
          typename Method, typename Allocator, typename Class>
-class race_class_task final : public race_task_base<Result, ParentResult>
+class race_class_task final
+    : public race_task_base<race_class_task<Result, ParentResult, Container, Method, Allocator, Class>, Result, ParentResult>
 {
   public:
     race_class_task(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : race_task_base<Result, ParentResult>{std::move(parent)}
+      : race_task_base<race_class_task, Result, ParentResult>{std::move(parent)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       auto arg = this->m_parent->run();
-      using task = race_class_task<Result, ParentResult, Container, Method, Allocator, Class>;
       for (auto method : this->m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method), arg));
+        futures.push_back(std::async(std::launch::async, &race_class_task::call, this, std::move(method), arg));
     }
 
     void call(Method method, ParentResult arg)
@@ -1762,11 +1715,12 @@ class race_class_task final : public race_task_base<Result, ParentResult>
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_methods.size();
     }
 
+  private:
     Container<Method, Allocator> m_methods;
     Class* const m_obj;
 };
@@ -1775,22 +1729,20 @@ class race_class_task final : public race_task_base<Result, ParentResult>
 template<typename ParentResult, template<typename, typename> class Container,
          typename Method, typename Allocator, typename Class>
 class race_class_task<void, ParentResult, Container, Method, Allocator, Class> final
-    : public race_task_base<void, ParentResult>
+    : public race_task_base<race_class_task<void, ParentResult, Container, Method, Allocator, Class>, void, ParentResult>
 {
   public:
     race_class_task(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : race_task_base<void, ParentResult>{std::move(parent)}
+      : race_task_base<race_class_task, void, ParentResult>{std::move(parent)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       auto arg = this->m_parent->run();
-      using task = race_class_task<void, ParentResult, Container, Method, Allocator, Class>;
       for (auto method : this->m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method), arg));
+        futures.push_back(std::async(std::launch::async, &race_class_task::call, this, std::move(method), arg));
     }
 
     void call(Method method, ParentResult arg)
@@ -1806,11 +1758,12 @@ class race_class_task<void, ParentResult, Container, Method, Allocator, Class> f
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_methods.size();
     }
 
+  private:
     Container<Method, Allocator> m_methods;
     Class* const m_obj;
 };
@@ -1818,22 +1771,21 @@ class race_class_task<void, ParentResult, Container, Method, Allocator, Class> f
 
 template<typename Result, typename ParentResult, template<typename, typename> class Container,
          typename Method, typename Allocator, typename Class>
-class race_class_task_void final : public race_task_base<Result, ParentResult>
+class race_class_task_void final
+    : public race_task_base<race_class_task_void<Result, ParentResult, Container, Method, Allocator, Class>, Result, ParentResult>
 {
   public:
     race_class_task_void(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : race_task_base<Result, ParentResult>{std::move(parent)}
+      : race_task_base<race_class_task_void, Result, ParentResult>{std::move(parent)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       this->m_parent->run();
-      using task = race_class_task_void<Result, ParentResult, Container, Method, Allocator, Class>;
       for (auto method : this->m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method)));
+        futures.push_back(std::async(std::launch::async, &race_class_task_void::call, this, std::move(method)));
     }
 
     void call(Method method)
@@ -1848,11 +1800,12 @@ class race_class_task_void final : public race_task_base<Result, ParentResult>
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_methods.size();
     }
 
+  private:
     Container<Method, Allocator> m_methods;
     Class* const m_obj;
 };
@@ -1861,22 +1814,20 @@ class race_class_task_void final : public race_task_base<Result, ParentResult>
 template<typename ParentResult, template<typename, typename> class Container,
          typename Method, typename Allocator, typename Class>
 class race_class_task_void<void, ParentResult, Container, Method, Allocator, Class> final
-    : public race_task_base<void, ParentResult>
+    : public race_task_base<race_class_task_void<void, ParentResult, Container, Method, Allocator, Class>, void, ParentResult>
 {
   public:
     race_class_task_void(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : race_task_base<void, ParentResult>{std::move(parent)}
+      : race_task_base<race_class_task_void, void, ParentResult>{std::move(parent)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       this->m_parent->run();
-      using task = race_class_task_void<void, ParentResult, Container, Method, Allocator, Class>;
       for (auto method : this->m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method)));
+        futures.push_back(std::async(std::launch::async, &race_class_task_void::call, this, std::move(method)));
     }
 
     void call(Method method)
@@ -1892,11 +1843,12 @@ class race_class_task_void<void, ParentResult, Container, Method, Allocator, Cla
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_methods.size();
     }
 
+  private:
     Container<Method, Allocator> m_methods;
     Class* const m_obj;
 };
@@ -1904,21 +1856,20 @@ class race_class_task_void<void, ParentResult, Container, Method, Allocator, Cla
 
 template<typename Result, typename ParentResult,
          template<typename, typename> class Container, typename Func, typename Allocator>
-class race_func_task final : public race_task_base<Result, ParentResult>
+class race_func_task final
+    : public race_task_base<race_func_task<Result, ParentResult, Container, Func, Allocator>, Result, ParentResult>
 {
   public:
     race_func_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : race_task_base<Result, ParentResult>{std::move(parent)}
+      : race_task_base<race_func_task, Result, ParentResult>{std::move(parent)}
       , m_funcs{std::move(funcs)}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       auto arg = this->m_parent->run();
-      using task = race_func_task<Result, ParentResult, Container, Func, Allocator>;
       for (auto func : this->m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func), arg));
+        futures.push_back(std::async(std::launch::async, &race_func_task::call, this, std::move(func), arg));
     }
 
     void call(Func func, ParentResult arg)
@@ -1933,32 +1884,31 @@ class race_func_task final : public race_task_base<Result, ParentResult>
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_funcs.size();
     }
 
+  private:
     Container<Func, Allocator> m_funcs;
 };
 
 
 template<typename ParentResult, template<typename, typename> class Container, typename Func, typename Allocator>
 class race_func_task<void, ParentResult, Container, Func, Allocator> final
-    : public race_task_base<void, ParentResult>
+    : public race_task_base<race_func_task<void, ParentResult, Container, Func, Allocator>, void, ParentResult>
 {
   public:
     race_func_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : race_task_base<void, ParentResult>{std::move(parent)}
+      : race_task_base<race_func_task, void, ParentResult>{std::move(parent)}
       , m_funcs{std::move(funcs)}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       auto arg = this->m_parent->run();
-      using task = race_func_task<void, ParentResult, Container, Func, Allocator>;
       for (auto func : this->m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func), arg));
+        futures.push_back(std::async(std::launch::async, &race_func_task::call, this, std::move(func), arg));
     }
 
     void call(Func func, ParentResult arg)
@@ -1974,32 +1924,32 @@ class race_func_task<void, ParentResult, Container, Func, Allocator> final
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_funcs.size();
     }
 
+  private:
     Container<Func, Allocator> m_funcs;
 };
 
 
 template<typename Result, typename ParentResult,
          template<typename, typename> class Container, typename Func, typename Allocator>
-class race_func_task_void final : public race_task_base<Result, ParentResult>
+class race_func_task_void final
+    : public race_task_base<race_func_task_void<Result, ParentResult, Container, Func, Allocator>, Result, ParentResult>
 {
   public:
     race_func_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : race_task_base<Result, ParentResult>{std::move(parent)}
+      : race_task_base<race_func_task_void, Result, ParentResult>{std::move(parent)}
       , m_funcs{std::move(funcs)}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       this->m_parent->run();
-      using task = race_func_task_void<Result, ParentResult, Container, Func, Allocator>;
       for (auto func : this->m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func)));
+        futures.push_back(std::async(std::launch::async, &race_func_task_void::call, this, std::move(func)));
     }
 
     void call(Func func)
@@ -2014,32 +1964,31 @@ class race_func_task_void final : public race_task_base<Result, ParentResult>
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_funcs.size();
     }
 
+  private:
     Container<Func, Allocator> m_funcs;
 };
 
 
 template<typename ParentResult, template<typename, typename> class Container, typename Func, typename Allocator>
 class race_func_task_void<void, ParentResult, Container, Func, Allocator> final
-    : public race_task_base<void, ParentResult>
+    : public race_task_base<race_func_task_void<void, ParentResult, Container, Func, Allocator>, void, ParentResult>
 {
   public:
     race_func_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : race_task_base<void, ParentResult>{std::move(parent)}
+      : race_task_base<race_func_task_void, void, ParentResult>{std::move(parent)}
       , m_funcs{std::move(funcs)}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
       this->m_parent->run();
-      using task = race_func_task_void<void, ParentResult, Container, Func, Allocator>;
       for (auto func : this->m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func)));
+        futures.push_back(std::async(std::launch::async, &race_func_task_void::call, this, std::move(func)));
     }
 
     void call(Func func)
@@ -2055,11 +2004,12 @@ class race_func_task_void<void, ParentResult, Container, Func, Allocator> final
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_funcs.size();
     }
 
+  private:
     Container<Func, Allocator> m_funcs;
 };
 
@@ -2079,9 +2029,8 @@ class make_all_class_task final : public task<Result>
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<typename Result::value_type>>(m_methods.size());
-      using task = make_all_class_task<Result, Container, Method, Allocator, Class, Args...>;
       for (auto method : m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method)));
+        futures.push_back(std::async(std::launch::async, &make_all_class_task::call, this, std::move(method)));
 
       Result result;
       vector_helper::reserve(result, m_methods.size());
@@ -2118,21 +2067,10 @@ class make_all_class_task<void, Container, Method, Allocator, Class, Args...> fi
     void run() final
     {
       auto futures = vector_helper::create_vector<std::future<void>>(m_methods.size());
-      using task = make_all_class_task<void, Container, Method, Allocator, Class, Args...>;
       for (auto method : m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method)));
-
+        futures.push_back(std::async(std::launch::async, &make_all_class_task::call, this, std::move(method)));
       for (auto& future : futures)
-      {
-        try
-        {
-          future.get();
-        }
-        catch(...)
-        {
-          std::rethrow_exception(std::current_exception());
-        }
-      }
+        future.get();
     }
 
   private:
@@ -2161,9 +2099,8 @@ class make_all_func_task final : public task<Result>
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<typename Result::value_type>>(m_funcs.size());
-      using task = make_all_func_task<Result, Container, Func, Allocator, Args...>;
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func)));
+        futures.push_back(std::async(std::launch::async, &make_all_func_task::call, this, std::move(func)));
 
       Result result;
       vector_helper::reserve(result, m_funcs.size());
@@ -2197,21 +2134,10 @@ class make_all_func_task<void, Container, Func, Allocator, Args...> final : publ
     void run() final
     {
       auto futures = vector_helper::create_vector<std::future<void>>(m_funcs.size());
-      using task = make_all_func_task<void, Container, Func, Allocator, Args...>;
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func)));
-
+        futures.push_back(std::async(std::launch::async, &make_all_func_task::call, this, std::move(func)));
       for (auto& future : futures)
-      {
-        try
-        {
-          future.get();
-        }
-        catch(...)
-        {
-          std::rethrow_exception(std::current_exception());
-        }
-      }
+        future.get();
     }
 
   private:
@@ -2240,9 +2166,8 @@ class make_all_settled_class_task final : public task<Result>
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<MethodResult>>(m_methods.size());
-      using task = make_all_settled_class_task<Result, MethodResult, Container, Method, Allocator, Class, Args...>;
       for (auto method : m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method)));
+        futures.push_back(std::async(std::launch::async, &make_all_settled_class_task::call, this, std::move(method)));
 
       Result result;
       vector_helper::reserve(result, m_methods.size());
@@ -2289,9 +2214,8 @@ class make_all_settled_class_task<Result, void, Container, Method, Allocator, Cl
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<void>>(m_methods.size());
-      using task = make_all_settled_class_task<Result, void, Container, Method, Allocator, Class, Args...>;
       for (auto method : m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method)));
+        futures.push_back(std::async(std::launch::async, &make_all_settled_class_task::call, this, std::move(method)));
 
       Result result;
       vector_helper::reserve(result, m_methods.size());
@@ -2338,9 +2262,8 @@ class make_all_settled_func_task final : public task<Result>
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<FuncResult>>(m_funcs.size());
-      using task = make_all_settled_func_task<Result, FuncResult, Container, Func, Allocator, Args...>;
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func)));
+        futures.push_back(std::async(std::launch::async, &make_all_settled_func_task::call, this, std::move(func)));
 
       Result result;
       vector_helper::reserve(result, m_funcs.size());
@@ -2385,9 +2308,8 @@ class make_all_settled_func_task<Result, void, Container, Func, Allocator, Args.
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<void>>(m_funcs.size());
-      using task = make_all_settled_func_task<Result, void, Container, Func, Allocator, Args...>;
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func)));
+        futures.push_back(std::async(std::launch::async, &make_all_settled_func_task::call, this, std::move(func)));
 
       Result result;
       vector_helper::reserve(result, m_funcs.size());
@@ -2419,25 +2341,16 @@ class make_all_settled_func_task<Result, void, Container, Func, Allocator, Args.
 };
 
 
-template<typename Result>
-class make_any_task_base : public task<Result>
+template<typename Derived, typename Result>
+class make_any_task_base : public iterable_base<Derived>, public task<Result>
 {
   public:
     Result run() final
     {
       auto future = m_promise.get_future();
-      auto futures = vector_helper::create_vector<std::future<void>>(iterable_size());
-      m_errors.reserve(iterable_size());
-      async_run(futures);
-
-      try
-      {
-        return future.get();
-      }
-      catch(...)
-      {
-        std::rethrow_exception(std::current_exception());
-      }
+      m_errors.reserve(this->iterable_size());
+      this->async_run();
+      return future.get();
     }
 
   protected:
@@ -2446,7 +2359,7 @@ class make_any_task_base : public task<Result>
       std::lock_guard<std::mutex> lock{m_mutex};
 
       m_errors.push_back(std::move(err));
-      if (m_errors.size() < iterable_size())
+      if (m_errors.size() < this->iterable_size())
         return;
 
       promise_helper::reject(m_promise, std::make_exception_ptr(aggregate_error{std::move(m_errors)}));
@@ -2455,9 +2368,6 @@ class make_any_task_base : public task<Result>
     std::promise<Result> m_promise;
 
   private:
-    virtual void async_run(std::vector<std::future<void>>& futures) = 0;
-    virtual std::size_t iterable_size() const = 0;
-
     std::vector<std::exception_ptr> m_errors;
     std::mutex m_mutex;
 };
@@ -2465,7 +2375,8 @@ class make_any_task_base : public task<Result>
 
 template<typename Result, template<typename, typename> class Container,
          typename Method, typename Allocator, typename Class, typename... Args>
-class make_any_class_task final : public make_any_task_base<Result>
+class make_any_class_task final
+    : public make_any_task_base<make_any_class_task<Result, Container, Method, Allocator, Class, Args...>, Result>
 {
   public:
     template<typename... Args_>
@@ -2475,12 +2386,10 @@ class make_any_class_task final : public make_any_task_base<Result>
       , m_args{std::forward<Args_>(args)...}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
-      using task = make_any_class_task<Result, Container, Method, Allocator, Class, Args...>;
       for (auto method : m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method)));
+        futures.push_back(std::async(std::launch::async, &make_any_class_task::call, this, std::move(method)));
     }
 
     void call(Method method)
@@ -2496,11 +2405,12 @@ class make_any_class_task final : public make_any_task_base<Result>
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_methods.size();
     }
 
+  private:
     Container<Method, Allocator> m_methods;
     Class* const m_obj;
     std::tuple<Args...> m_args;
@@ -2509,7 +2419,8 @@ class make_any_class_task final : public make_any_task_base<Result>
 
 template<template<typename, typename> class Container, typename Method,
          typename Allocator, typename Class, typename... Args>
-class make_any_class_task<void, Container, Method, Allocator, Class, Args...> final : public make_any_task_base<void>
+class make_any_class_task<void, Container, Method, Allocator, Class, Args...> final
+    : public make_any_task_base<make_any_class_task<void, Container, Method, Allocator, Class, Args...>, void>
 {
   public:
     template<typename... Args_>
@@ -2519,12 +2430,10 @@ class make_any_class_task<void, Container, Method, Allocator, Class, Args...> fi
       , m_args{std::forward<Args_>(args)...}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
-      using task = make_any_class_task<void, Container, Method, Allocator, Class, Args...>;
       for (auto method : m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method)));
+        futures.push_back(std::async(std::launch::async, &make_any_class_task::call, this, std::move(method)));
     }
 
     void call(Method method)
@@ -2540,11 +2449,12 @@ class make_any_class_task<void, Container, Method, Allocator, Class, Args...> fi
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_methods.size();
     }
 
+  private:
     Container<Method, Allocator> m_methods;
     Class* const m_obj;
     std::tuple<Args...> m_args;
@@ -2553,7 +2463,8 @@ class make_any_class_task<void, Container, Method, Allocator, Class, Args...> fi
 
 template<typename Result, template<typename, typename> class Container,
          typename Func, typename Allocator, typename... Args>
-class make_any_func_task final : public make_any_task_base<Result>
+class make_any_func_task final
+    : public make_any_task_base<make_any_func_task<Result, Container, Func, Allocator, Args...>, Result>
 {
   public:
     template<typename... Args_>
@@ -2562,12 +2473,10 @@ class make_any_func_task final : public make_any_task_base<Result>
       , m_args{std::forward<Args_>(args)...}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
-      using task = make_any_func_task<Result, Container, Func, Allocator, Args...>;
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func)));
+        futures.push_back(std::async(std::launch::async, &make_any_func_task::call, this, std::move(func)));
     }
 
     void call(Func func)
@@ -2582,18 +2491,20 @@ class make_any_func_task final : public make_any_task_base<Result>
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_funcs.size();
     }
 
+  private:
     Container<Func, Allocator> m_funcs;
     std::tuple<Args...> m_args;
 };
 
 
 template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args>
-class make_any_func_task<void, Container, Func, Allocator, Args...> final : public make_any_task_base<void>
+class make_any_func_task<void, Container, Func, Allocator, Args...> final
+    : public make_any_task_base<make_any_func_task<void, Container, Func, Allocator, Args...>, void>
 {
   public:
     template<typename... Args_>
@@ -2602,12 +2513,10 @@ class make_any_func_task<void, Container, Func, Allocator, Args...> final : publ
       , m_args{std::forward<Args_>(args)...}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
-      using task = make_any_func_task<void, Container, Func, Allocator, Args...>;
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func)));
+        futures.push_back(std::async(std::launch::async, &make_any_func_task::call, this, std::move(func)));
     }
 
     void call(Func func)
@@ -2623,48 +2532,37 @@ class make_any_func_task<void, Container, Func, Allocator, Args...> final : publ
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_funcs.size();
     }
 
+  private:
     Container<Func, Allocator> m_funcs;
     std::tuple<Args...> m_args;
 };
 
 
-template<typename Result>
-class make_race_task_base : public task<Result>
+template<typename Derived, typename Result>
+class make_race_task_base : public iterable_base<Derived>, public task<Result>
 {
   public:
     Result run() final
     {
       auto future = m_promise.get_future();
-      auto futures = vector_helper::create_vector<std::future<void>>(iterable_size());
-      async_run(futures);
-
-      try
-      {
-        return future.get();
-      }
-      catch(...)
-      {
-        std::rethrow_exception(std::current_exception());
-      }
+      this->async_run();
+      return future.get();
     }
 
   protected:
     std::promise<Result> m_promise;
-
-  private:
-    virtual void async_run(std::vector<std::future<void>>& futures) = 0;
-    virtual std::size_t iterable_size() const = 0;
 };
 
 
 template<typename Result, template<typename, typename> class Container, typename Method,
          typename Allocator, typename Class, typename... Args>
-class make_race_class_task final : public make_race_task_base<Result>
+class make_race_class_task final
+    : public make_race_task_base<make_race_class_task<Result, Container, Method, Allocator, Class, Args...>, Result>
 {
   public:
     template<typename... Args_>
@@ -2674,12 +2572,10 @@ class make_race_class_task final : public make_race_task_base<Result>
       , m_args{std::forward<Args_>(args)...}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
-      using task = make_race_class_task<Result, Container, Method, Allocator, Class, Args...>;
       for (auto method : m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method)));
+        futures.push_back(std::async(std::launch::async, &make_race_class_task::call, this, std::move(method)));
     }
 
     void call(Method method)
@@ -2695,11 +2591,12 @@ class make_race_class_task final : public make_race_task_base<Result>
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_methods.size();
     }
 
+  private:
     Container<Method, Allocator> m_methods;
     Class* const m_obj;
     std::tuple<Args...> m_args;
@@ -2708,7 +2605,8 @@ class make_race_class_task final : public make_race_task_base<Result>
 
 template<template<typename, typename> class Container, typename Method,
          typename Allocator, typename Class, typename... Args>
-class make_race_class_task<void, Container, Method, Allocator, Class, Args...> final : public make_race_task_base<void>
+class make_race_class_task<void, Container, Method, Allocator, Class, Args...> final
+    : public make_race_task_base<make_race_class_task<void, Container, Method, Allocator, Class, Args...>, void>
 {
   public:
     template<typename... Args_>
@@ -2718,12 +2616,10 @@ class make_race_class_task<void, Container, Method, Allocator, Class, Args...> f
       , m_args{std::forward<Args_>(args)...}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
-      using task = make_race_class_task<void, Container, Method, Allocator, Class, Args...>;
       for (auto method : m_methods)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(method)));
+        futures.push_back(std::async(std::launch::async, &make_race_class_task::call, this, std::move(method)));
     }
 
     void call(Method method)
@@ -2739,11 +2635,12 @@ class make_race_class_task<void, Container, Method, Allocator, Class, Args...> f
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_methods.size();
     }
 
+  private:
     Container<Method, Allocator> m_methods;
     Class* const m_obj;
     std::tuple<Args...> m_args;
@@ -2752,7 +2649,8 @@ class make_race_class_task<void, Container, Method, Allocator, Class, Args...> f
 
 template<typename Result, template<typename, typename> class Container,
          typename Func, typename Allocator, typename... Args>
-class make_race_func_task final : public make_race_task_base<Result>
+class make_race_func_task final
+    : public make_race_task_base<make_race_func_task<Result, Container, Func, Allocator, Args...>, Result>
 {
   public:
     template<typename... Args_>
@@ -2761,12 +2659,10 @@ class make_race_func_task final : public make_race_task_base<Result>
       , m_args{std::forward<Args_>(args)...}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
-      using task = make_race_func_task<Result, Container, Func, Allocator, Args...>;
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func)));
+        futures.push_back(std::async(std::launch::async, &make_race_func_task::call, this, std::move(func)));
     }
 
     void call(Func func)
@@ -2781,18 +2677,20 @@ class make_race_func_task final : public make_race_task_base<Result>
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_funcs.size();
     }
 
+  private:
     Container<Func, Allocator> m_funcs;
     std::tuple<Args...> m_args;
 };
 
 
 template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args>
-class make_race_func_task<void, Container, Func, Allocator, Args...> final : public make_race_task_base<void>
+class make_race_func_task<void, Container, Func, Allocator, Args...> final
+    : public make_race_task_base<make_race_func_task<void, Container, Func, Allocator, Args...>, void>
 {
   public:
     template<typename... Args_>
@@ -2801,12 +2699,10 @@ class make_race_func_task<void, Container, Func, Allocator, Args...> final : pub
       , m_args{std::forward<Args_>(args)...}
     {}
 
-  private:
-    void async_run(std::vector<std::future<void>>& futures) final
+    void async_run(std::vector<std::future<void>>& futures)
     {
-      using task = make_race_func_task<void, Container, Func, Allocator, Args...>;
       for (auto func : m_funcs)
-        futures.push_back(std::async(std::launch::async, &task::call, this, std::move(func)));
+        futures.push_back(std::async(std::launch::async, &make_race_func_task::call, this, std::move(func)));
     }
 
     void call(Func func)
@@ -2822,11 +2718,12 @@ class make_race_func_task<void, Container, Func, Allocator, Args...> final : pub
       }
     }
 
-    std::size_t iterable_size() const final
+    std::size_t iterable_size() const
     {
       return m_funcs.size();
     }
 
+  private:
     Container<Func, Allocator> m_funcs;
     std::tuple<Args...> m_args;
 };
@@ -3504,7 +3401,7 @@ class promise
      */
     std::future<T> run(std::launch policy = std::launch::async) const
     {
-      return std::async(policy, &promise<T>::run_impl, this, m_task);
+      return std::async(policy, &promise::run_impl, this, m_task);
     }
 
   private:
