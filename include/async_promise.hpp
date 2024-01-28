@@ -467,33 +467,33 @@ class initial_func_task<void, Func, Args...> final : public task<void>
 };
 
 
-template<typename Result, typename ParentResult>
+template<typename Result, typename PriorResult>
 class next_task : public task<Result>
 {
   public:
-    explicit next_task(task_ptr<ParentResult> parent)
-      : m_parent{std::move(parent)}
+    explicit next_task(task_ptr<PriorResult> prior_task)
+      : m_prior_task{std::move(prior_task)}
     {}
 
   protected:
-    task_ptr<ParentResult> m_parent;
+    task_ptr<PriorResult> m_prior_task;
 };
 
 
-template<typename Result, typename ParentResult, typename Method, typename Class>
-class then_class_task final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, typename Method, typename Class>
+class then_class_task final : public next_task<Result, PriorResult>
 {
   public:
     template<typename Method_>
-    then_class_task(task_ptr<ParentResult> parent, Method_&& method, Class* obj)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    then_class_task(task_ptr<PriorResult> prior_task, Method_&& method, Class* obj)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_method{std::forward<Method_>(method)}
       , m_obj{obj}
     {}
 
     Result run() final
     {
-      return (m_obj->*m_method)(this->m_parent->run());
+      return (m_obj->*m_method)(this->m_prior_task->run());
     }
 
   private:
@@ -502,20 +502,20 @@ class then_class_task final : public next_task<Result, ParentResult>
 };
 
 
-template<typename Result, typename ParentResult, typename Method, typename Class>
-class then_class_task_void final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, typename Method, typename Class>
+class then_class_task_void final : public next_task<Result, PriorResult>
 {
 public:
     template<typename Method_>
-    then_class_task_void(task_ptr<ParentResult> parent, Method_&& method, Class* obj)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    then_class_task_void(task_ptr<PriorResult> prior_task, Method_&& method, Class* obj)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_method{std::forward<Method_>(method)}
       , m_obj{obj}
     {}
 
     Result run() final
     {
-      this->m_parent->run();
+      this->m_prior_task->run();
       return (m_obj->*m_method)();
     }
 
@@ -525,19 +525,19 @@ private:
 };
 
 
-template<typename Result, typename ParentResult, typename Func>
-class then_func_task final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, typename Func>
+class then_func_task final : public next_task<Result, PriorResult>
 {
   public:
     template<typename Func_>
-    then_func_task(task_ptr<ParentResult> parent, Func_&& func)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    then_func_task(task_ptr<PriorResult> prior_task, Func_&& func)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_func{std::forward<Func_>(func)}
     {}
 
     Result run() final
     {
-      return m_func(this->m_parent->run());
+      return m_func(this->m_prior_task->run());
     }
 
   private:
@@ -545,19 +545,19 @@ class then_func_task final : public next_task<Result, ParentResult>
 };
 
 
-template<typename Result, typename ParentResult, typename Func>
-class then_func_task_void final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, typename Func>
+class then_func_task_void final : public next_task<Result, PriorResult>
 {
   public:
     template<typename Func_>
-    then_func_task_void(task_ptr<ParentResult> parent, Func_&& func)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    then_func_task_void(task_ptr<PriorResult> prior_task, Func_&& func)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_func{std::forward<Func_>(func)}
     {}
 
     Result run() final
     {
-      this->m_parent->run();
+      this->m_prior_task->run();
       return m_func();
     }
 
@@ -566,13 +566,13 @@ class then_func_task_void final : public next_task<Result, ParentResult>
 };
 
 
-template<typename Result, typename ParentResult, typename Method, typename Class>
-class fail_class_task final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, typename Method, typename Class>
+class fail_class_task final : public next_task<Result, PriorResult>
 {
   public:
     template<typename Method_>
-    fail_class_task(task_ptr<ParentResult> parent, Method_&& method, Class* obj)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    fail_class_task(task_ptr<PriorResult> prior_task, Method_&& method, Class* obj)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_method{std::forward<Method_>(method)}
       , m_obj{obj}
     {}
@@ -581,7 +581,7 @@ class fail_class_task final : public next_task<Result, ParentResult>
     {
       try
       {
-        return this->m_parent->run();
+        return this->m_prior_task->run();
       }
       catch(...)
       {
@@ -595,13 +595,13 @@ class fail_class_task final : public next_task<Result, ParentResult>
 };
 
 
-template<typename Result, typename ParentResult, typename Method, typename Class>
-class fail_class_task_void final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, typename Method, typename Class>
+class fail_class_task_void final : public next_task<Result, PriorResult>
 {
   public:
     template<typename Method_>
-    fail_class_task_void(task_ptr<ParentResult> parent, Method_&& method, Class* obj)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    fail_class_task_void(task_ptr<PriorResult> prior_task, Method_&& method, Class* obj)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_method{std::forward<Method_>(method)}
       , m_obj{obj}
     {}
@@ -610,7 +610,7 @@ class fail_class_task_void final : public next_task<Result, ParentResult>
     {
       try
       {
-        return this->m_parent->run();
+        return this->m_prior_task->run();
       }
       catch(...)
       {
@@ -624,13 +624,13 @@ class fail_class_task_void final : public next_task<Result, ParentResult>
 };
 
 
-template<typename Result, typename ParentResult, typename Func>
-class fail_func_task final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, typename Func>
+class fail_func_task final : public next_task<Result, PriorResult>
 {
   public:
     template<typename Method_>
-    fail_func_task(task_ptr<ParentResult> parent, Method_&& func)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    fail_func_task(task_ptr<PriorResult> prior_task, Method_&& func)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_func{std::forward<Method_>(func)}
     {}
 
@@ -638,7 +638,7 @@ class fail_func_task final : public next_task<Result, ParentResult>
     {
       try
       {
-        return this->m_parent->run();
+        return this->m_prior_task->run();
       }
       catch(...)
       {
@@ -651,13 +651,13 @@ class fail_func_task final : public next_task<Result, ParentResult>
 };
 
 
-template<typename Result, typename ParentResult, typename Func>
-class fail_func_task_void final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, typename Func>
+class fail_func_task_void final : public next_task<Result, PriorResult>
 {
   public:
     template<typename Func_>
-    fail_func_task_void(task_ptr<ParentResult> parent, Func_&& func)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    fail_func_task_void(task_ptr<PriorResult> prior_task, Func_&& func)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_func{std::forward<Func_>(func)}
     {}
 
@@ -665,7 +665,7 @@ class fail_func_task_void final : public next_task<Result, ParentResult>
     {
       try
       {
-        return this->m_parent->run();
+        return this->m_prior_task->run();
       }
       catch(...)
       {
@@ -678,13 +678,13 @@ class fail_func_task_void final : public next_task<Result, ParentResult>
 };
 
 
-template<typename Result, typename ParentResult, typename Method, typename Class>
-class finally_class_task final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, typename Method, typename Class>
+class finally_class_task final : public next_task<Result, PriorResult>
 {
   public:
     template<typename Method_>
-    finally_class_task(task_ptr<ParentResult> parent, Method_&& method, Class* obj)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    finally_class_task(task_ptr<PriorResult> prior_task, Method_&& method, Class* obj)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_method{std::forward<Method_>(method)}
       , m_obj{obj}
     {}
@@ -693,7 +693,7 @@ class finally_class_task final : public next_task<Result, ParentResult>
     {
       try
       {
-        this->m_parent->run();
+        this->m_prior_task->run();
       }
       catch(...)
       {}
@@ -707,13 +707,13 @@ class finally_class_task final : public next_task<Result, ParentResult>
 };
 
 
-template<typename Result, typename ParentResult, typename Func>
-class finally_func_task final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, typename Func>
+class finally_func_task final : public next_task<Result, PriorResult>
 {
   public:
     template<typename Func_>
-    finally_func_task(task_ptr<ParentResult> parent, Func_&& func)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    finally_func_task(task_ptr<PriorResult> prior_task, Func_&& func)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_func{std::forward<Func_>(func)}
     {}
 
@@ -721,7 +721,7 @@ class finally_func_task final : public next_task<Result, ParentResult>
     {
       try
       {
-        this->m_parent->run();
+        this->m_prior_task->run();
       }
       catch(...)
       {}
@@ -734,13 +734,13 @@ class finally_func_task final : public next_task<Result, ParentResult>
 };
 
 
-template<typename Result, typename ParentResult, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class>
-class all_class_task final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, template<typename, typename> class Container,
+         typename Method, typename Alloc, typename Class>
+class all_class_task final : public next_task<Result, PriorResult>
 {
   public:
-    all_class_task(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    all_class_task(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
@@ -748,7 +748,7 @@ class all_class_task final : public next_task<Result, ParentResult>
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<typename Result::value_type>>(m_methods.size());
-      auto rv = this->m_parent->run();
+      auto rv = this->m_prior_task->run();
       for (auto method : m_methods)
         futures.push_back(std::async(std::launch::async, std::move(method), m_obj, rv));
 
@@ -761,19 +761,19 @@ class all_class_task final : public next_task<Result, ParentResult>
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
 };
 
 
-template<typename ParentResult, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class>
-class all_class_task<void, ParentResult, Container, Method, Allocator, Class> final
-    : public next_task<void, ParentResult>
+template<typename PriorResult, template<typename, typename> class Container,
+         typename Method, typename Alloc, typename Class>
+class all_class_task<void, PriorResult, Container, Method, Alloc, Class> final
+    : public next_task<void, PriorResult>
 {
   public:
-    all_class_task(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : next_task<void, ParentResult>{std::move(parent)}
+    all_class_task(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : next_task<void, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
@@ -781,7 +781,7 @@ class all_class_task<void, ParentResult, Container, Method, Allocator, Class> fi
     void run() final
     {
       auto futures = vector_helper::create_vector<std::future<void>>(m_methods.size());
-      auto rv = this->m_parent->run();
+      auto rv = this->m_prior_task->run();
       for (auto method : m_methods)
         futures.push_back(std::async(std::launch::async, std::move(method), m_obj, rv));
       for (auto& future : futures)
@@ -789,18 +789,18 @@ class all_class_task<void, ParentResult, Container, Method, Allocator, Class> fi
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
 };
 
 
-template<typename Result, typename ParentResult,
-         template<typename, typename> class Container, typename Method, typename Allocator, typename Class>
-class all_class_task_void final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult,
+         template<typename, typename> class Container, typename Method, typename Alloc, typename Class>
+class all_class_task_void final : public next_task<Result, PriorResult>
 {
   public:
-    all_class_task_void(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    all_class_task_void(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
@@ -808,7 +808,7 @@ class all_class_task_void final : public next_task<Result, ParentResult>
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<typename Result::value_type>>(m_methods.size());
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto method : m_methods)
         futures.push_back(std::async(std::launch::async, std::move(method), m_obj));
 
@@ -821,19 +821,19 @@ class all_class_task_void final : public next_task<Result, ParentResult>
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
 };
 
 
-template<typename ParentResult, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class>
-class all_class_task_void<void, ParentResult, Container, Method, Allocator, Class> final
-    : public next_task<void, ParentResult>
+template<typename PriorResult, template<typename, typename> class Container,
+         typename Method, typename Alloc, typename Class>
+class all_class_task_void<void, PriorResult, Container, Method, Alloc, Class> final
+    : public next_task<void, PriorResult>
 {
   public:
-    all_class_task_void(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : next_task<void, ParentResult>{std::move(parent)}
+    all_class_task_void(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : next_task<void, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
@@ -841,7 +841,7 @@ class all_class_task_void<void, ParentResult, Container, Method, Allocator, Clas
     void run() final
     {
       auto futures = vector_helper::create_vector<std::future<void>>(m_methods.size());
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto method : m_methods)
         futures.push_back(std::async(std::launch::async, std::move(method), m_obj));
       for (auto& future : futures)
@@ -849,25 +849,25 @@ class all_class_task_void<void, ParentResult, Container, Method, Allocator, Clas
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
 };
 
 
-template<typename Result, typename ParentResult,
-         template<typename, typename> class Container, typename Func, typename Allocator>
-class all_func_task final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult,
+         template<typename, typename> class Container, typename Func, typename Alloc>
+class all_func_task final : public next_task<Result, PriorResult>
 {
   public:
-    all_func_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    all_func_task(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<typename Result::value_type>>(m_funcs.size());
-      auto rv = this->m_parent->run();
+      auto rv = this->m_prior_task->run();
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, std::move(func), rv));
 
@@ -880,23 +880,23 @@ class all_func_task final : public next_task<Result, ParentResult>
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename ParentResult, template<typename, typename> class Container, typename Func, typename Allocator>
-class all_func_task<void, ParentResult, Container, Func, Allocator> final : public next_task<void, ParentResult>
+template<typename PriorResult, template<typename, typename> class Container, typename Func, typename Alloc>
+class all_func_task<void, PriorResult, Container, Func, Alloc> final : public next_task<void, PriorResult>
 {
   public:
-    all_func_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : next_task<void, ParentResult>{std::move(parent)}
+    all_func_task(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : next_task<void, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     void run() final
     {
       auto futures = vector_helper::create_vector<std::future<void>>(m_funcs.size());
-      auto rv = this->m_parent->run();
+      auto rv = this->m_prior_task->run();
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, std::move(func), rv));
       for (auto& future : futures)
@@ -904,24 +904,24 @@ class all_func_task<void, ParentResult, Container, Func, Allocator> final : publ
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename Result, typename ParentResult,
-         template<typename, typename> class Container, typename Func, typename Allocator>
-class all_func_task_void final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult,
+         template<typename, typename> class Container, typename Func, typename Alloc>
+class all_func_task_void final : public next_task<Result, PriorResult>
 {
   public:
-    all_func_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    all_func_task_void(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<typename Result::value_type>>(m_funcs.size());
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, std::move(func)));
 
@@ -934,23 +934,23 @@ class all_func_task_void final : public next_task<Result, ParentResult>
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename ParentResult, template<typename, typename> class Container, typename Func, typename Allocator>
-class all_func_task_void<void, ParentResult, Container, Func, Allocator> final : public next_task<void, ParentResult>
+template<typename PriorResult, template<typename, typename> class Container, typename Func, typename Alloc>
+class all_func_task_void<void, PriorResult, Container, Func, Alloc> final : public next_task<void, PriorResult>
 {
   public:
-    all_func_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : next_task<void, ParentResult>{std::move(parent)}
+    all_func_task_void(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : next_task<void, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     void run() final
     {
       auto futures = vector_helper::create_vector<std::future<void>>(m_funcs.size());
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, std::move(func)));
       for (auto& future : futures)
@@ -958,17 +958,17 @@ class all_func_task_void<void, ParentResult, Container, Func, Allocator> final :
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename Result, typename ParentResult, typename MethodResult,
-template<typename, typename> class Container, typename Method, typename Allocator, typename Class>
-class all_settled_class_task final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, typename MethodResult,
+template<typename, typename> class Container, typename Method, typename Alloc, typename Class>
+class all_settled_class_task final : public next_task<Result, PriorResult>
 {
   public:
-    all_settled_class_task(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    all_settled_class_task(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
@@ -976,7 +976,7 @@ class all_settled_class_task final : public next_task<Result, ParentResult>
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<MethodResult>>(m_methods.size());
-      auto rv = this->m_parent->run();
+      auto rv = this->m_prior_task->run();
       for (auto method : m_methods)
         futures.push_back(std::async(std::launch::async, std::move(method), m_obj, rv));
 
@@ -999,19 +999,19 @@ class all_settled_class_task final : public next_task<Result, ParentResult>
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
 };
 
 
-template<typename Result, typename ParentResult,
-         template<typename, typename> class Container, typename Method, typename Allocator, typename Class>
-class all_settled_class_task<Result, ParentResult, void, Container, Method, Allocator, Class> final
-    : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult,
+         template<typename, typename> class Container, typename Method, typename Alloc, typename Class>
+class all_settled_class_task<Result, PriorResult, void, Container, Method, Alloc, Class> final
+    : public next_task<Result, PriorResult>
 {
   public:
-    all_settled_class_task(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    all_settled_class_task(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
@@ -1019,7 +1019,7 @@ class all_settled_class_task<Result, ParentResult, void, Container, Method, Allo
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<void>>(m_methods.size());
-      auto rv = this->m_parent->run();
+      auto rv = this->m_prior_task->run();
       for (auto method : m_methods)
         futures.push_back(std::async(std::launch::async, std::move(method), m_obj, rv));
 
@@ -1043,18 +1043,18 @@ class all_settled_class_task<Result, ParentResult, void, Container, Method, Allo
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
 };
 
 
-template<typename Result, typename ParentResult, typename MethodResult,
-         template<typename, typename> class Container, typename Method, typename Allocator, typename Class>
-class all_settled_class_task_void final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, typename MethodResult,
+         template<typename, typename> class Container, typename Method, typename Alloc, typename Class>
+class all_settled_class_task_void final : public next_task<Result, PriorResult>
 {
   public:
-    all_settled_class_task_void(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    all_settled_class_task_void(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
@@ -1062,7 +1062,7 @@ class all_settled_class_task_void final : public next_task<Result, ParentResult>
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<MethodResult>>(m_methods.size());
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto method : m_methods)
         futures.push_back(std::async(std::launch::async, std::move(method), m_obj));
 
@@ -1085,19 +1085,19 @@ class all_settled_class_task_void final : public next_task<Result, ParentResult>
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
 };
 
 
-template<typename Result, typename ParentResult,
-         template<typename, typename> class Container, typename Method, typename Allocator, typename Class>
-class all_settled_class_task_void<Result, ParentResult, void, Container, Method, Allocator, Class> final
-    : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult,
+         template<typename, typename> class Container, typename Method, typename Alloc, typename Class>
+class all_settled_class_task_void<Result, PriorResult, void, Container, Method, Alloc, Class> final
+    : public next_task<Result, PriorResult>
 {
   public:
-    all_settled_class_task_void(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    all_settled_class_task_void(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
@@ -1105,7 +1105,7 @@ class all_settled_class_task_void<Result, ParentResult, void, Container, Method,
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<void>>(m_methods.size());
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto method : m_methods)
         futures.push_back(std::async(std::launch::async, std::move(method), m_obj));
 
@@ -1129,25 +1129,25 @@ class all_settled_class_task_void<Result, ParentResult, void, Container, Method,
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
 };
 
 
-template<typename Result, typename ParentResult, typename FuncResult,
-         template<typename, typename> class Container, typename Func, typename Allocator>
-class all_settled_func_task final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, typename FuncResult,
+         template<typename, typename> class Container, typename Func, typename Alloc>
+class all_settled_func_task final : public next_task<Result, PriorResult>
 {
   public:
-    all_settled_func_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    all_settled_func_task(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<FuncResult>>(m_funcs.size());
-      auto rv = this->m_parent->run();
+      auto rv = this->m_prior_task->run();
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, std::move(func), rv));
 
@@ -1170,25 +1170,25 @@ class all_settled_func_task final : public next_task<Result, ParentResult>
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename Result, typename ParentResult,
-         template<typename, typename> class Container, typename Func, typename Allocator>
-class all_settled_func_task<Result, ParentResult, void, Container, Func, Allocator> final
-    : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult,
+         template<typename, typename> class Container, typename Func, typename Alloc>
+class all_settled_func_task<Result, PriorResult, void, Container, Func, Alloc> final
+    : public next_task<Result, PriorResult>
 {
   public:
-    all_settled_func_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    all_settled_func_task(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<void>>(m_funcs.size());
-      auto rv = this->m_parent->run();
+      auto rv = this->m_prior_task->run();
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, std::move(func), rv));
 
@@ -1212,24 +1212,24 @@ class all_settled_func_task<Result, ParentResult, void, Container, Func, Allocat
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename Result, typename ParentResult, typename FuncResult,
-         template<typename, typename> class Container, typename Func, typename Allocator>
-class all_settled_func_task_void final : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult, typename FuncResult,
+         template<typename, typename> class Container, typename Func, typename Alloc>
+class all_settled_func_task_void final : public next_task<Result, PriorResult>
 {
   public:
-    all_settled_func_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    all_settled_func_task_void(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<FuncResult>>(m_funcs.size());
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, std::move(func)));
 
@@ -1252,25 +1252,25 @@ class all_settled_func_task_void final : public next_task<Result, ParentResult>
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename Result, typename ParentResult,
-         template<typename, typename> class Container, typename Func, typename Allocator>
-class all_settled_func_task_void<Result, ParentResult, void, Container, Func, Allocator> final
-    : public next_task<Result, ParentResult>
+template<typename Result, typename PriorResult,
+         template<typename, typename> class Container, typename Func, typename Alloc>
+class all_settled_func_task_void<Result, PriorResult, void, Container, Func, Alloc> final
+    : public next_task<Result, PriorResult>
 {
   public:
-    all_settled_func_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    all_settled_func_task_void(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     Result run() final
     {
       auto futures = vector_helper::create_vector<std::future<void>>(m_funcs.size());
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, std::move(func)));
 
@@ -1294,16 +1294,16 @@ class all_settled_func_task_void<Result, ParentResult, void, Container, Func, Al
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename Derived, typename Result, typename ParentResult>
-class any_task_base : public iterable_base<Derived>, public next_task<Result, ParentResult>
+template<typename Derived, typename Result, typename PriorResult>
+class any_task_base : public iterable_base<Derived>, public next_task<Result, PriorResult>
 {
   public:
-    any_task_base(task_ptr<ParentResult> parent)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    any_task_base(task_ptr<PriorResult> prior_task)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
     {}
 
     Result run() final
@@ -1334,26 +1334,26 @@ class any_task_base : public iterable_base<Derived>, public next_task<Result, Pa
 };
 
 
-template<typename Result, typename ParentResult, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class>
+template<typename Result, typename PriorResult, template<typename, typename> class Container,
+         typename Method, typename Alloc, typename Class>
 class any_class_task final
-    : public any_task_base<any_class_task<Result, ParentResult, Container, Method, Allocator, Class>, Result, ParentResult>
+    : public any_task_base<any_class_task<Result, PriorResult, Container, Method, Alloc, Class>, Result, PriorResult>
 {
   public:
-    any_class_task(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : any_task_base<any_class_task, Result, ParentResult>{std::move(parent)}
+    any_class_task(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : any_task_base<any_class_task, Result, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      auto arg = this->m_parent->run();
+      auto arg = this->m_prior_task->run();
       for (auto method : m_methods)
         futures.push_back(std::async(std::launch::async, &any_class_task::call, this, std::move(method), arg));
     }
 
-    void call(Method method, ParentResult arg)
+    void call(Method method, PriorResult arg)
     {
       try
       {
@@ -1371,31 +1371,31 @@ class any_class_task final
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* m_obj;
 };
 
 
-template<typename ParentResult, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class>
-class any_class_task<void, ParentResult, Container, Method, Allocator, Class> final
-    : public any_task_base<any_class_task<void, ParentResult, Container, Method, Allocator, Class>, void, ParentResult>
+template<typename PriorResult, template<typename, typename> class Container,
+         typename Method, typename Alloc, typename Class>
+class any_class_task<void, PriorResult, Container, Method, Alloc, Class> final
+    : public any_task_base<any_class_task<void, PriorResult, Container, Method, Alloc, Class>, void, PriorResult>
 {
   public:
-    any_class_task(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : any_task_base<any_class_task, void, ParentResult>{std::move(parent)}
+    any_class_task(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : any_task_base<any_class_task, void, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      auto arg = this->m_parent->run();
+      auto arg = this->m_prior_task->run();
       for (auto method : m_methods)
         futures.push_back(std::async(std::launch::async, &any_class_task::call, this, std::move(method), arg));
     }
 
-    void call(Method method, ParentResult arg)
+    void call(Method method, PriorResult arg)
     {
       try
       {
@@ -1414,26 +1414,26 @@ class any_class_task<void, ParentResult, Container, Method, Allocator, Class> fi
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* m_obj;
 };
 
 
-template<typename Result, typename ParentResult, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class>
+template<typename Result, typename PriorResult, template<typename, typename> class Container,
+         typename Method, typename Alloc, typename Class>
 class any_class_task_void final
-    : public any_task_base<any_class_task_void<Result, ParentResult, Container, Method, Allocator, Class>, Result, ParentResult>
+    : public any_task_base<any_class_task_void<Result, PriorResult, Container, Method, Alloc, Class>, Result, PriorResult>
 {
   public:
-    any_class_task_void(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : any_task_base<any_class_task_void, Result, ParentResult>{std::move(parent)}
+    any_class_task_void(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : any_task_base<any_class_task_void, Result, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto method : m_methods)
         futures.push_back(std::async(std::launch::async, &any_class_task_void::call, this, std::move(method)));
     }
@@ -1456,26 +1456,26 @@ class any_class_task_void final
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* m_obj;
 };
 
 
-template<typename ParentResult, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class>
-class any_class_task_void<void, ParentResult, Container, Method, Allocator, Class> final
-    : public any_task_base<any_class_task_void<void, ParentResult, Container, Method, Allocator, Class>, void, ParentResult>
+template<typename PriorResult, template<typename, typename> class Container,
+         typename Method, typename Alloc, typename Class>
+class any_class_task_void<void, PriorResult, Container, Method, Alloc, Class> final
+    : public any_task_base<any_class_task_void<void, PriorResult, Container, Method, Alloc, Class>, void, PriorResult>
 {
   public:
-    any_class_task_void(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : any_task_base<any_class_task_void, void, ParentResult>{std::move(parent)}
+    any_class_task_void(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : any_task_base<any_class_task_void, void, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto method : m_methods)
         futures.push_back(std::async(std::launch::async, &any_class_task_void::call, this, std::move(method)));
     }
@@ -1499,30 +1499,30 @@ class any_class_task_void<void, ParentResult, Container, Method, Allocator, Clas
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* m_obj;
 };
 
 
-template<typename Result, typename ParentResult,
-         template<typename, typename> class Container, typename Func, typename Allocator>
+template<typename Result, typename PriorResult,
+         template<typename, typename> class Container, typename Func, typename Alloc>
 class any_func_task final
-    : public any_task_base<any_func_task<Result, ParentResult, Container, Func, Allocator>, Result, ParentResult>
+    : public any_task_base<any_func_task<Result, PriorResult, Container, Func, Alloc>, Result, PriorResult>
 {
   public:
-    any_func_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : any_task_base<any_func_task, Result, ParentResult>{std::move(parent)}
+    any_func_task(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : any_task_base<any_func_task, Result, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      auto arg = this->m_parent->run();
+      auto arg = this->m_prior_task->run();
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, &any_func_task::call, this, std::move(func), arg));
     }
 
-    void call(Func func, ParentResult arg)
+    void call(Func func, PriorResult arg)
     {
       try
       {
@@ -1540,28 +1540,28 @@ class any_func_task final
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename ParentResult, template<typename, typename> class Container, typename Func, typename Allocator>
-class any_func_task<void, ParentResult, Container, Func, Allocator> final
-    : public any_task_base<any_func_task<void, ParentResult, Container, Func, Allocator>, void, ParentResult>
+template<typename PriorResult, template<typename, typename> class Container, typename Func, typename Alloc>
+class any_func_task<void, PriorResult, Container, Func, Alloc> final
+    : public any_task_base<any_func_task<void, PriorResult, Container, Func, Alloc>, void, PriorResult>
 {
   public:
-    any_func_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : any_task_base<any_func_task, void, ParentResult>{std::move(parent)}
+    any_func_task(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : any_task_base<any_func_task, void, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      auto arg = this->m_parent->run();
+      auto arg = this->m_prior_task->run();
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, &any_func_task::call, this, std::move(func), arg));
     }
 
-    void call(Func func, ParentResult arg)
+    void call(Func func, PriorResult arg)
     {
       try
       {
@@ -1580,24 +1580,24 @@ class any_func_task<void, ParentResult, Container, Func, Allocator> final
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename Result, typename ParentResult,
-         template<typename, typename> class Container, typename Func, typename Allocator>
+template<typename Result, typename PriorResult,
+         template<typename, typename> class Container, typename Func, typename Alloc>
 class any_func_task_void final
-    : public any_task_base<any_func_task_void<Result, ParentResult, Container, Func, Allocator>, Result, ParentResult>
+    : public any_task_base<any_func_task_void<Result, PriorResult, Container, Func, Alloc>, Result, PriorResult>
 {
   public:
-    any_func_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : any_task_base<any_func_task_void, Result, ParentResult>{std::move(parent)}
+    any_func_task_void(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : any_task_base<any_func_task_void, Result, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, &any_func_task_void::call, this, std::move(func)));
     }
@@ -1620,23 +1620,23 @@ class any_func_task_void final
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename ParentResult, template<typename, typename> class Container, typename Func, typename Allocator>
-class any_func_task_void<void, ParentResult, Container, Func, Allocator> final
-    : public any_task_base<any_func_task_void<void, ParentResult, Container, Func, Allocator>, void, ParentResult>
+template<typename PriorResult, template<typename, typename> class Container, typename Func, typename Alloc>
+class any_func_task_void<void, PriorResult, Container, Func, Alloc> final
+    : public any_task_base<any_func_task_void<void, PriorResult, Container, Func, Alloc>, void, PriorResult>
 {
   public:
-    any_func_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : any_task_base<any_func_task_void, void, ParentResult>{std::move(parent)}
+    any_func_task_void(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : any_task_base<any_func_task_void, void, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto func : m_funcs)
         futures.push_back(std::async(std::launch::async, &any_func_task_void::call, this, std::move(func)));
     }
@@ -1660,16 +1660,16 @@ class any_func_task_void<void, ParentResult, Container, Func, Allocator> final
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename Derived, typename Result, typename ParentResult>
-class race_task_base : public iterable_base<Derived>, public next_task<Result, ParentResult>
+template<typename Derived, typename Result, typename PriorResult>
+class race_task_base : public iterable_base<Derived>, public next_task<Result, PriorResult>
 {
   public:
-    race_task_base(task_ptr<ParentResult> parent)
-      : next_task<Result, ParentResult>{std::move(parent)}
+    race_task_base(task_ptr<PriorResult> prior_task)
+      : next_task<Result, PriorResult>{std::move(prior_task)}
     {}
 
     Result run() final
@@ -1684,26 +1684,26 @@ class race_task_base : public iterable_base<Derived>, public next_task<Result, P
 };
 
 
-template<typename Result, typename ParentResult, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class>
+template<typename Result, typename PriorResult, template<typename, typename> class Container,
+         typename Method, typename Alloc, typename Class>
 class race_class_task final
-    : public race_task_base<race_class_task<Result, ParentResult, Container, Method, Allocator, Class>, Result, ParentResult>
+    : public race_task_base<race_class_task<Result, PriorResult, Container, Method, Alloc, Class>, Result, PriorResult>
 {
   public:
-    race_class_task(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : race_task_base<race_class_task, Result, ParentResult>{std::move(parent)}
+    race_class_task(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : race_task_base<race_class_task, Result, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      auto arg = this->m_parent->run();
+      auto arg = this->m_prior_task->run();
       for (auto method : this->m_methods)
         futures.push_back(std::async(std::launch::async, &race_class_task::call, this, std::move(method), arg));
     }
 
-    void call(Method method, ParentResult arg)
+    void call(Method method, PriorResult arg)
     {
       try
       {
@@ -1721,31 +1721,31 @@ class race_class_task final
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
 };
 
 
-template<typename ParentResult, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class>
-class race_class_task<void, ParentResult, Container, Method, Allocator, Class> final
-    : public race_task_base<race_class_task<void, ParentResult, Container, Method, Allocator, Class>, void, ParentResult>
+template<typename PriorResult, template<typename, typename> class Container,
+         typename Method, typename Alloc, typename Class>
+class race_class_task<void, PriorResult, Container, Method, Alloc, Class> final
+    : public race_task_base<race_class_task<void, PriorResult, Container, Method, Alloc, Class>, void, PriorResult>
 {
   public:
-    race_class_task(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : race_task_base<race_class_task, void, ParentResult>{std::move(parent)}
+    race_class_task(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : race_task_base<race_class_task, void, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      auto arg = this->m_parent->run();
+      auto arg = this->m_prior_task->run();
       for (auto method : this->m_methods)
         futures.push_back(std::async(std::launch::async, &race_class_task::call, this, std::move(method), arg));
     }
 
-    void call(Method method, ParentResult arg)
+    void call(Method method, PriorResult arg)
     {
       try
       {
@@ -1764,26 +1764,26 @@ class race_class_task<void, ParentResult, Container, Method, Allocator, Class> f
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
 };
 
 
-template<typename Result, typename ParentResult, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class>
+template<typename Result, typename PriorResult, template<typename, typename> class Container,
+         typename Method, typename Alloc, typename Class>
 class race_class_task_void final
-    : public race_task_base<race_class_task_void<Result, ParentResult, Container, Method, Allocator, Class>, Result, ParentResult>
+    : public race_task_base<race_class_task_void<Result, PriorResult, Container, Method, Alloc, Class>, Result, PriorResult>
 {
   public:
-    race_class_task_void(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : race_task_base<race_class_task_void, Result, ParentResult>{std::move(parent)}
+    race_class_task_void(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : race_task_base<race_class_task_void, Result, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto method : this->m_methods)
         futures.push_back(std::async(std::launch::async, &race_class_task_void::call, this, std::move(method)));
     }
@@ -1806,26 +1806,26 @@ class race_class_task_void final
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
 };
 
 
-template<typename ParentResult, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class>
-class race_class_task_void<void, ParentResult, Container, Method, Allocator, Class> final
-    : public race_task_base<race_class_task_void<void, ParentResult, Container, Method, Allocator, Class>, void, ParentResult>
+template<typename PriorResult, template<typename, typename> class Container,
+         typename Method, typename Alloc, typename Class>
+class race_class_task_void<void, PriorResult, Container, Method, Alloc, Class> final
+    : public race_task_base<race_class_task_void<void, PriorResult, Container, Method, Alloc, Class>, void, PriorResult>
 {
   public:
-    race_class_task_void(task_ptr<ParentResult> parent, Container<Method, Allocator> methods, Class* obj)
-      : race_task_base<race_class_task_void, void, ParentResult>{std::move(parent)}
+    race_class_task_void(task_ptr<PriorResult> prior_task, Container<Method, Alloc> methods, Class* obj)
+      : race_task_base<race_class_task_void, void, PriorResult>{std::move(prior_task)}
       , m_methods{std::move(methods)}
       , m_obj{obj}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto method : this->m_methods)
         futures.push_back(std::async(std::launch::async, &race_class_task_void::call, this, std::move(method)));
     }
@@ -1849,30 +1849,30 @@ class race_class_task_void<void, ParentResult, Container, Method, Allocator, Cla
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
 };
 
 
-template<typename Result, typename ParentResult,
-         template<typename, typename> class Container, typename Func, typename Allocator>
+template<typename Result, typename PriorResult,
+         template<typename, typename> class Container, typename Func, typename Alloc>
 class race_func_task final
-    : public race_task_base<race_func_task<Result, ParentResult, Container, Func, Allocator>, Result, ParentResult>
+    : public race_task_base<race_func_task<Result, PriorResult, Container, Func, Alloc>, Result, PriorResult>
 {
   public:
-    race_func_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : race_task_base<race_func_task, Result, ParentResult>{std::move(parent)}
+    race_func_task(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : race_task_base<race_func_task, Result, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      auto arg = this->m_parent->run();
+      auto arg = this->m_prior_task->run();
       for (auto func : this->m_funcs)
         futures.push_back(std::async(std::launch::async, &race_func_task::call, this, std::move(func), arg));
     }
 
-    void call(Func func, ParentResult arg)
+    void call(Func func, PriorResult arg)
     {
       try
       {
@@ -1890,28 +1890,28 @@ class race_func_task final
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename ParentResult, template<typename, typename> class Container, typename Func, typename Allocator>
-class race_func_task<void, ParentResult, Container, Func, Allocator> final
-    : public race_task_base<race_func_task<void, ParentResult, Container, Func, Allocator>, void, ParentResult>
+template<typename PriorResult, template<typename, typename> class Container, typename Func, typename Alloc>
+class race_func_task<void, PriorResult, Container, Func, Alloc> final
+    : public race_task_base<race_func_task<void, PriorResult, Container, Func, Alloc>, void, PriorResult>
 {
   public:
-    race_func_task(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : race_task_base<race_func_task, void, ParentResult>{std::move(parent)}
+    race_func_task(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : race_task_base<race_func_task, void, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      auto arg = this->m_parent->run();
+      auto arg = this->m_prior_task->run();
       for (auto func : this->m_funcs)
         futures.push_back(std::async(std::launch::async, &race_func_task::call, this, std::move(func), arg));
     }
 
-    void call(Func func, ParentResult arg)
+    void call(Func func, PriorResult arg)
     {
       try
       {
@@ -1930,24 +1930,24 @@ class race_func_task<void, ParentResult, Container, Func, Allocator> final
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename Result, typename ParentResult,
-         template<typename, typename> class Container, typename Func, typename Allocator>
+template<typename Result, typename PriorResult,
+         template<typename, typename> class Container, typename Func, typename Alloc>
 class race_func_task_void final
-    : public race_task_base<race_func_task_void<Result, ParentResult, Container, Func, Allocator>, Result, ParentResult>
+    : public race_task_base<race_func_task_void<Result, PriorResult, Container, Func, Alloc>, Result, PriorResult>
 {
   public:
-    race_func_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : race_task_base<race_func_task_void, Result, ParentResult>{std::move(parent)}
+    race_func_task_void(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : race_task_base<race_func_task_void, Result, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto func : this->m_funcs)
         futures.push_back(std::async(std::launch::async, &race_func_task_void::call, this, std::move(func)));
     }
@@ -1970,23 +1970,23 @@ class race_func_task_void final
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
-template<typename ParentResult, template<typename, typename> class Container, typename Func, typename Allocator>
-class race_func_task_void<void, ParentResult, Container, Func, Allocator> final
-    : public race_task_base<race_func_task_void<void, ParentResult, Container, Func, Allocator>, void, ParentResult>
+template<typename PriorResult, template<typename, typename> class Container, typename Func, typename Alloc>
+class race_func_task_void<void, PriorResult, Container, Func, Alloc> final
+    : public race_task_base<race_func_task_void<void, PriorResult, Container, Func, Alloc>, void, PriorResult>
 {
   public:
-    race_func_task_void(task_ptr<ParentResult> parent, Container<Func, Allocator> funcs)
-      : race_task_base<race_func_task_void, void, ParentResult>{std::move(parent)}
+    race_func_task_void(task_ptr<PriorResult> prior_task, Container<Func, Alloc> funcs)
+      : race_task_base<race_func_task_void, void, PriorResult>{std::move(prior_task)}
       , m_funcs{std::move(funcs)}
     {}
 
     void async_run(std::vector<std::future<void>>& futures)
     {
-      this->m_parent->run();
+      this->m_prior_task->run();
       for (auto func : this->m_funcs)
         futures.push_back(std::async(std::launch::async, &race_func_task_void::call, this, std::move(func)));
     }
@@ -2010,17 +2010,17 @@ class race_func_task_void<void, ParentResult, Container, Func, Allocator> final
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
 };
 
 
 template<typename Result, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class, typename... Args>
+         typename Method, typename Alloc, typename Class, typename... Args>
 class make_all_class_task final : public task<Result>
 {
   public:
     template<typename... Args_>
-    make_all_class_task(Container<Method, Allocator> methods, Class* obj, Args_&&... args)
+    make_all_class_task(Container<Method, Alloc> methods, Class* obj, Args_&&... args)
       : m_methods{std::move(methods)}
       , m_obj{obj}
       , m_args{std::forward<Args_>(args)...}
@@ -2046,19 +2046,19 @@ class make_all_class_task final : public task<Result>
       return class_method_call_helper<typename Result::value_type>::call(std::move(method), m_obj, m_args);
     }
 
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
     std::tuple<Args...> m_args;
 };
 
 
 template<template<typename, typename> class Container, typename Method,
-         typename Allocator, typename Class, typename... Args>
-class make_all_class_task<void, Container, Method, Allocator, Class, Args...> final : public task<void>
+         typename Alloc, typename Class, typename... Args>
+class make_all_class_task<void, Container, Method, Alloc, Class, Args...> final : public task<void>
 {
   public:
     template<typename... Args_>
-    make_all_class_task(Container<Method, Allocator> methods, Class* obj, Args_&&... args)
+    make_all_class_task(Container<Method, Alloc> methods, Class* obj, Args_&&... args)
       : m_methods{std::move(methods)}
       , m_obj{obj}
       , m_args{std::forward<Args_>(args)...}
@@ -2079,19 +2079,19 @@ class make_all_class_task<void, Container, Method, Allocator, Class, Args...> fi
       class_method_call_helper<void>::call(std::move(method), m_obj, m_args);
     }
 
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
     std::tuple<Args...> m_args;
 };
 
 
 template<typename Result, template<typename, typename> class Container,
-         typename Func, typename Allocator, typename... Args>
+         typename Func, typename Alloc, typename... Args>
 class make_all_func_task final : public task<Result>
 {
   public:
     template<typename... Args_>
-    explicit make_all_func_task(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_all_func_task(Container<Func, Alloc> funcs, Args_&&... args)
       : m_funcs{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -2116,17 +2116,17 @@ class make_all_func_task final : public task<Result>
       return apply(std::move(func), m_args);
     }
 
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
     std::tuple<Args...> m_args;
 };
 
 
-template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args>
-class make_all_func_task<void, Container, Func, Allocator, Args...> final : public task<void>
+template<template<typename, typename> class Container, typename Func, typename Alloc, typename... Args>
+class make_all_func_task<void, Container, Func, Alloc, Args...> final : public task<void>
 {
   public:
     template<typename... Args_>
-    explicit make_all_func_task(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_all_func_task(Container<Func, Alloc> funcs, Args_&&... args)
       : m_funcs{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -2146,18 +2146,18 @@ class make_all_func_task<void, Container, Func, Allocator, Args...> final : publ
       apply(std::move(func), m_args);
     }
 
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
     std::tuple<Args...> m_args;
 };
 
 
 template<typename Result, typename MethodResult, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class, typename... Args>
+         typename Method, typename Alloc, typename Class, typename... Args>
 class make_all_settled_class_task final : public task<Result>
 {
   public:
     template<typename... Args_>
-    explicit make_all_settled_class_task(Container<Method, Allocator> methods, Class* obj, Args_&&... args)
+    explicit make_all_settled_class_task(Container<Method, Alloc> methods, Class* obj, Args_&&... args)
       : m_methods{std::move(methods)}
       , m_args{std::forward<Args_>(args)...}
       , m_obj{obj}
@@ -2193,19 +2193,19 @@ class make_all_settled_class_task final : public task<Result>
       return class_method_call_helper<MethodResult>::call(std::move(method), m_obj, m_args);
     }
 
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
     std::tuple<Args...> m_args;
 };
 
 
 template<typename Result, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class, typename... Args>
-class make_all_settled_class_task<Result, void, Container, Method, Allocator, Class, Args...> final : public task<Result>
+         typename Method, typename Alloc, typename Class, typename... Args>
+class make_all_settled_class_task<Result, void, Container, Method, Alloc, Class, Args...> final : public task<Result>
 {
   public:
     template<typename... Args_>
-    explicit make_all_settled_class_task(Container<Method, Allocator> methods, Class* obj, Args_&&... args)
+    explicit make_all_settled_class_task(Container<Method, Alloc> methods, Class* obj, Args_&&... args)
       : m_methods{std::move(methods)}
       , m_args{std::forward<Args_>(args)...}
       , m_obj{obj}
@@ -2242,19 +2242,19 @@ class make_all_settled_class_task<Result, void, Container, Method, Allocator, Cl
       class_method_call_helper<void>::call(std::move(method), m_obj, m_args);
     }
 
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
     std::tuple<Args...> m_args;
 };
 
 
 template<typename Result, typename FuncResult, template<typename, typename> class Container,
-         typename Func, typename Allocator, typename... Args>
+         typename Func, typename Alloc, typename... Args>
 class make_all_settled_func_task final : public task<Result>
 {
   public:
     template<typename... Args_>
-    explicit make_all_settled_func_task(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_all_settled_func_task(Container<Func, Alloc> funcs, Args_&&... args)
       : m_funcs{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -2289,18 +2289,18 @@ class make_all_settled_func_task final : public task<Result>
       return apply(std::move(func), m_args);
     }
 
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
     std::tuple<Args...> m_args;
 };
 
 
 template<typename Result, template<typename, typename> class Container,
-         typename Func, typename Allocator, typename... Args>
-class make_all_settled_func_task<Result, void, Container, Func, Allocator, Args...> final : public task<Result>
+         typename Func, typename Alloc, typename... Args>
+class make_all_settled_func_task<Result, void, Container, Func, Alloc, Args...> final : public task<Result>
 {
   public:
     template<typename... Args_>
-    explicit make_all_settled_func_task(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_all_settled_func_task(Container<Func, Alloc> funcs, Args_&&... args)
       : m_funcs{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -2336,7 +2336,7 @@ class make_all_settled_func_task<Result, void, Container, Func, Allocator, Args.
       apply(std::move(func), m_args);
     }
 
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
     std::tuple<Args...> m_args;
 };
 
@@ -2374,13 +2374,13 @@ class make_any_task_base : public iterable_base<Derived>, public task<Result>
 
 
 template<typename Result, template<typename, typename> class Container,
-         typename Method, typename Allocator, typename Class, typename... Args>
+         typename Method, typename Alloc, typename Class, typename... Args>
 class make_any_class_task final
-    : public make_any_task_base<make_any_class_task<Result, Container, Method, Allocator, Class, Args...>, Result>
+    : public make_any_task_base<make_any_class_task<Result, Container, Method, Alloc, Class, Args...>, Result>
 {
   public:
     template<typename... Args_>
-    explicit make_any_class_task(Container<Method, Allocator> methods, Class* obj, Args_&&... args)
+    explicit make_any_class_task(Container<Method, Alloc> methods, Class* obj, Args_&&... args)
       : m_methods{std::move(methods)}
       , m_obj{obj}
       , m_args{std::forward<Args_>(args)...}
@@ -2411,20 +2411,20 @@ class make_any_class_task final
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
     std::tuple<Args...> m_args;
 };
 
 
 template<template<typename, typename> class Container, typename Method,
-         typename Allocator, typename Class, typename... Args>
-class make_any_class_task<void, Container, Method, Allocator, Class, Args...> final
-    : public make_any_task_base<make_any_class_task<void, Container, Method, Allocator, Class, Args...>, void>
+         typename Alloc, typename Class, typename... Args>
+class make_any_class_task<void, Container, Method, Alloc, Class, Args...> final
+    : public make_any_task_base<make_any_class_task<void, Container, Method, Alloc, Class, Args...>, void>
 {
   public:
     template<typename... Args_>
-    explicit make_any_class_task(Container<Method, Allocator> methods, Class* obj, Args_&&... args)
+    explicit make_any_class_task(Container<Method, Alloc> methods, Class* obj, Args_&&... args)
       : m_methods{std::move(methods)}
       , m_obj{obj}
       , m_args{std::forward<Args_>(args)...}
@@ -2455,20 +2455,20 @@ class make_any_class_task<void, Container, Method, Allocator, Class, Args...> fi
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
     std::tuple<Args...> m_args;
 };
 
 
 template<typename Result, template<typename, typename> class Container,
-         typename Func, typename Allocator, typename... Args>
+         typename Func, typename Alloc, typename... Args>
 class make_any_func_task final
-    : public make_any_task_base<make_any_func_task<Result, Container, Func, Allocator, Args...>, Result>
+    : public make_any_task_base<make_any_func_task<Result, Container, Func, Alloc, Args...>, Result>
 {
   public:
     template<typename... Args_>
-    explicit make_any_func_task(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_any_func_task(Container<Func, Alloc> funcs, Args_&&... args)
       : m_funcs{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -2497,18 +2497,18 @@ class make_any_func_task final
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
     std::tuple<Args...> m_args;
 };
 
 
-template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args>
-class make_any_func_task<void, Container, Func, Allocator, Args...> final
-    : public make_any_task_base<make_any_func_task<void, Container, Func, Allocator, Args...>, void>
+template<template<typename, typename> class Container, typename Func, typename Alloc, typename... Args>
+class make_any_func_task<void, Container, Func, Alloc, Args...> final
+    : public make_any_task_base<make_any_func_task<void, Container, Func, Alloc, Args...>, void>
 {
   public:
     template<typename... Args_>
-    explicit make_any_func_task(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_any_func_task(Container<Func, Alloc> funcs, Args_&&... args)
       : m_funcs{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -2538,7 +2538,7 @@ class make_any_func_task<void, Container, Func, Allocator, Args...> final
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
     std::tuple<Args...> m_args;
 };
 
@@ -2560,13 +2560,13 @@ class make_race_task_base : public iterable_base<Derived>, public task<Result>
 
 
 template<typename Result, template<typename, typename> class Container, typename Method,
-         typename Allocator, typename Class, typename... Args>
+         typename Alloc, typename Class, typename... Args>
 class make_race_class_task final
-    : public make_race_task_base<make_race_class_task<Result, Container, Method, Allocator, Class, Args...>, Result>
+    : public make_race_task_base<make_race_class_task<Result, Container, Method, Alloc, Class, Args...>, Result>
 {
   public:
     template<typename... Args_>
-    explicit make_race_class_task(Container<Method, Allocator> methods, Class* obj, Args_&&... args)
+    explicit make_race_class_task(Container<Method, Alloc> methods, Class* obj, Args_&&... args)
       : m_methods{std::move(methods)}
       , m_obj{obj}
       , m_args{std::forward<Args_>(args)...}
@@ -2597,20 +2597,20 @@ class make_race_class_task final
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
     std::tuple<Args...> m_args;
 };
 
 
 template<template<typename, typename> class Container, typename Method,
-         typename Allocator, typename Class, typename... Args>
-class make_race_class_task<void, Container, Method, Allocator, Class, Args...> final
-    : public make_race_task_base<make_race_class_task<void, Container, Method, Allocator, Class, Args...>, void>
+         typename Alloc, typename Class, typename... Args>
+class make_race_class_task<void, Container, Method, Alloc, Class, Args...> final
+    : public make_race_task_base<make_race_class_task<void, Container, Method, Alloc, Class, Args...>, void>
 {
   public:
     template<typename... Args_>
-    explicit make_race_class_task(Container<Method, Allocator> methods, Class* obj, Args_&&... args)
+    explicit make_race_class_task(Container<Method, Alloc> methods, Class* obj, Args_&&... args)
       : m_methods{std::move(methods)}
       , m_obj{obj}
       , m_args{std::forward<Args_>(args)...}
@@ -2641,20 +2641,20 @@ class make_race_class_task<void, Container, Method, Allocator, Class, Args...> f
     }
 
   private:
-    Container<Method, Allocator> m_methods;
+    Container<Method, Alloc> m_methods;
     Class* const m_obj;
     std::tuple<Args...> m_args;
 };
 
 
 template<typename Result, template<typename, typename> class Container,
-         typename Func, typename Allocator, typename... Args>
+         typename Func, typename Alloc, typename... Args>
 class make_race_func_task final
-    : public make_race_task_base<make_race_func_task<Result, Container, Func, Allocator, Args...>, Result>
+    : public make_race_task_base<make_race_func_task<Result, Container, Func, Alloc, Args...>, Result>
 {
   public:
     template<typename... Args_>
-    explicit make_race_func_task(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_race_func_task(Container<Func, Alloc> funcs, Args_&&... args)
       : m_funcs{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -2683,18 +2683,18 @@ class make_race_func_task final
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
     std::tuple<Args...> m_args;
 };
 
 
-template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args>
-class make_race_func_task<void, Container, Func, Allocator, Args...> final
-    : public make_race_task_base<make_race_func_task<void, Container, Func, Allocator, Args...>, void>
+template<template<typename, typename> class Container, typename Func, typename Alloc, typename... Args>
+class make_race_func_task<void, Container, Func, Alloc, Args...> final
+    : public make_race_task_base<make_race_func_task<void, Container, Func, Alloc, Args...>, void>
 {
   public:
     template<typename... Args_>
-    explicit make_race_func_task(Container<Func, Allocator> funcs, Args_&&... args)
+    explicit make_race_func_task(Container<Func, Alloc> funcs, Args_&&... args)
       : m_funcs{std::move(funcs)}
       , m_args{std::forward<Args_>(args)...}
     {}
@@ -2724,7 +2724,7 @@ class make_race_func_task<void, Container, Func, Allocator, Args...> final
     }
 
   private:
-    Container<Func, Allocator> m_funcs;
+    Container<Func, Alloc> m_funcs;
     std::tuple<Args...> m_args;
 };
 
@@ -2985,14 +2985,14 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+    template<template<typename, typename> class Container, typename Method, typename Alloc, typename Class,
              typename Arg = T, typename FuncResult = typename std::result_of<Method(Class*, Arg)>::type,
              typename Result = Container<FuncResult, std::allocator<FuncResult>>,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
-    promise<Result> all(Container<Method, Allocator> methods, Class* obj) const
+    promise<Result> all(Container<Method, Alloc> methods, Class* obj) const
     {
-      using task = internal::all_class_task<Result, Arg, Container, Method, Allocator, Class>;
+      using task = internal::all_class_task<Result, Arg, Container, Method, Alloc, Class>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -3004,13 +3004,13 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+    template<template<typename, typename> class Container, typename Method, typename Alloc, typename Class,
              typename FuncResult = typename std::result_of<Method(Class*)>::type,
              typename Result = Container<FuncResult, std::allocator<FuncResult>>,
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
-    promise<Result> all(Container<Method, Allocator> methods, Class* obj) const
+    promise<Result> all(Container<Method, Alloc> methods, Class* obj) const
     {
-      using task = internal::all_class_task_void<Result, T, Container, Method, Allocator, Class>;
+      using task = internal::all_class_task_void<Result, T, Container, Method, Alloc, Class>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -3022,13 +3022,13 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+    template<template<typename, typename> class Container, typename Method, typename Alloc, typename Class,
              typename Arg = T, typename FuncResult = typename std::result_of<Method(Class*, Arg)>::type,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
              typename = typename std::enable_if<std::is_void<FuncResult>::value>::type>
-    promise<void> all(Container<Method, Allocator> methods, Class* obj) const
+    promise<void> all(Container<Method, Alloc> methods, Class* obj) const
     {
-      using task = internal::all_class_task<void, Arg, Container, Method, Allocator, Class>;
+      using task = internal::all_class_task<void, Arg, Container, Method, Alloc, Class>;
       return promise<void>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -3040,12 +3040,12 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+    template<template<typename, typename> class Container, typename Method, typename Alloc, typename Class,
              typename FuncResult = typename std::result_of<Method(Class*)>::type,
              typename = typename std::enable_if<std::is_void<FuncResult>::value>::type>
-    promise<void> all(Container<Method, Allocator> methods, Class* obj) const
+    promise<void> all(Container<Method, Alloc> methods, Class* obj) const
     {
-      using task = internal::all_class_task_void<void, void, Container, Method, Allocator, Class>;
+      using task = internal::all_class_task_void<void, void, Container, Method, Alloc, Class>;
       return promise<void>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -3056,14 +3056,14 @@ class promise
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator,
+    template<template<typename, typename> class Container, typename Func, typename Alloc,
              typename Arg = T, typename FuncResult = typename std::result_of<Func(Arg)>::type,
              typename Result = Container<FuncResult, std::allocator<FuncResult>>,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
-    promise<Result> all(Container<Func, Allocator> funcs) const
+    promise<Result> all(Container<Func, Alloc> funcs) const
     {
-      using task = internal::all_func_task<Result, Arg, Container, Func, Allocator>;
+      using task = internal::all_func_task<Result, Arg, Container, Func, Alloc>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -3074,13 +3074,13 @@ class promise
      * @param funcs - Functions that not receives any result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator,
+    template<template<typename, typename> class Container, typename Func, typename Alloc,
              typename FuncResult = typename std::result_of<Func()>::type,
              typename Result = Container<FuncResult, std::allocator<FuncResult>>,
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
-    promise<Result> all(Container<Func, Allocator> funcs) const
+    promise<Result> all(Container<Func, Alloc> funcs) const
     {
-      using task = internal::all_func_task_void<Result, T, Container, Func, Allocator>;
+      using task = internal::all_func_task_void<Result, T, Container, Func, Alloc>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -3091,13 +3091,13 @@ class promise
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator,
+    template<template<typename, typename> class Container, typename Func, typename Alloc,
              typename Arg = T, typename FuncResult = typename std::result_of<Func(Arg)>::type,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
              typename = typename std::enable_if<std::is_void<FuncResult>::value>::type>
-    promise<void> all(Container<Func, Allocator> funcs) const
+    promise<void> all(Container<Func, Alloc> funcs) const
     {
-      using task = internal::all_func_task<void, Arg, Container, Func, Allocator>;
+      using task = internal::all_func_task<void, Arg, Container, Func, Alloc>;
       return promise<void>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -3108,12 +3108,12 @@ class promise
      * @param funcs - Functions that not receives any result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator,
+    template<template<typename, typename> class Container, typename Func, typename Alloc,
              typename FuncResult = typename std::result_of<Func()>::type,
              typename = typename std::enable_if<std::is_void<FuncResult>::value>::type>
-    promise<void> all(Container<Func, Allocator> funcs) const
+    promise<void> all(Container<Func, Alloc> funcs) const
     {
-      using task = internal::all_func_task_void<void, void, Container, Func, Allocator>;
+      using task = internal::all_func_task_void<void, void, Container, Func, Alloc>;
       return promise<void>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -3125,14 +3125,14 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+    template<template<typename, typename> class Container, typename Method, typename Alloc, typename Class,
              typename Arg = T, typename FuncResult = typename std::result_of<Method(Class*, Arg)>::type,
              typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
-    promise<Result> all_settled(Container<Method, Allocator> methods, Class* obj) const
+    promise<Result> all_settled(Container<Method, Alloc> methods, Class* obj) const
     {
-      using task = internal::all_settled_class_task<Result, Arg, FuncResult, Container, Method, Allocator, Class>;
+      using task = internal::all_settled_class_task<Result, Arg, FuncResult, Container, Method, Alloc, Class>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -3144,14 +3144,14 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+    template<template<typename, typename> class Container, typename Method, typename Alloc, typename Class,
              typename FuncResult = typename std::result_of<Method(Class*)>::type,
              typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
              typename = typename std::enable_if<std::is_void<FuncResult>::value>::type,
              typename = typename std::true_type::type>
-    promise<Result> all_settled(Container<Method, Allocator> methods, Class* obj) const
+    promise<Result> all_settled(Container<Method, Alloc> methods, Class* obj) const
     {
-      using task = internal::all_settled_class_task_void<Result, T, void, Container, Method, Allocator, Class>;
+      using task = internal::all_settled_class_task_void<Result, T, void, Container, Method, Alloc, Class>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -3163,15 +3163,15 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+    template<template<typename, typename> class Container, typename Method, typename Alloc, typename Class,
              typename Arg = T, typename FuncResult = typename std::result_of<Method(Class*, Arg)>::type,
              typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
              typename = typename std::enable_if<std::is_void<FuncResult>::value>::type,
              typename = typename std::true_type::type>
-    promise<Result> all_settled(Container<Method, Allocator> methods, Class* obj) const
+    promise<Result> all_settled(Container<Method, Alloc> methods, Class* obj) const
     {
-      using task = internal::all_settled_class_task<Result, Arg, void, Container, Method, Allocator, Class>;
+      using task = internal::all_settled_class_task<Result, Arg, void, Container, Method, Alloc, Class>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -3183,13 +3183,13 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+    template<template<typename, typename> class Container, typename Method, typename Alloc, typename Class,
              typename FuncResult = typename std::result_of<Method(Class*)>::type,
              typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
-    promise<Result> all_settled(Container<Method, Allocator> methods, Class* obj) const
+    promise<Result> all_settled(Container<Method, Alloc> methods, Class* obj) const
     {
-      using task = internal::all_settled_class_task_void<Result, T, FuncResult, Container, Method, Allocator, Class>;
+      using task = internal::all_settled_class_task_void<Result, T, FuncResult, Container, Method, Alloc, Class>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -3200,14 +3200,14 @@ class promise
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator,
+    template<template<typename, typename> class Container, typename Func, typename Alloc,
              typename Arg = T, typename FuncResult = typename std::result_of<Func(Arg)>::type,
              typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
-    promise<Result> all_settled(Container<Func, Allocator> funcs) const
+    promise<Result> all_settled(Container<Func, Alloc> funcs) const
     {
-      using task = internal::all_settled_func_task<Result, Arg, FuncResult, Container, Func, Allocator>;
+      using task = internal::all_settled_func_task<Result, Arg, FuncResult, Container, Func, Alloc>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -3218,14 +3218,14 @@ class promise
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator,
+    template<template<typename, typename> class Container, typename Func, typename Alloc,
              typename FuncResult = typename std::result_of<Func()>::type,
              typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
              typename = typename std::enable_if<std::is_void<FuncResult>::value>::type,
              typename = typename std::true_type::type>
-    promise<Result> all_settled(Container<Func, Allocator> funcs) const
+    promise<Result> all_settled(Container<Func, Alloc> funcs) const
     {
-      using task = internal::all_settled_func_task_void<Result, T, void, Container, Func, Allocator>;
+      using task = internal::all_settled_func_task_void<Result, T, void, Container, Func, Alloc>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -3236,15 +3236,15 @@ class promise
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator,
+    template<template<typename, typename> class Container, typename Func, typename Alloc,
              typename Arg = T, typename FuncResult = typename std::result_of<Func(Arg)>::type,
              typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type,
              typename = typename std::enable_if<std::is_void<FuncResult>::value>::type,
              typename = typename std::true_type::type>
-    promise<Result> all_settled(Container<Func, Allocator> funcs) const
+    promise<Result> all_settled(Container<Func, Alloc> funcs) const
     {
-      using task = internal::all_settled_func_task<Result, Arg, void, Container, Func, Allocator>;
+      using task = internal::all_settled_func_task<Result, Arg, void, Container, Func, Alloc>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -3255,13 +3255,13 @@ class promise
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator,
+    template<template<typename, typename> class Container, typename Func, typename Alloc,
              typename FuncResult = typename std::result_of<Func()>::type,
              typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
              typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
-    promise<Result> all_settled(Container<Func, Allocator> funcs) const
+    promise<Result> all_settled(Container<Func, Alloc> funcs) const
     {
-      using task = internal::all_settled_func_task_void<Result, T, FuncResult, Container, Func, Allocator>;
+      using task = internal::all_settled_func_task_void<Result, T, FuncResult, Container, Func, Alloc>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -3273,12 +3273,12 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+    template<template<typename, typename> class Container, typename Method, typename Alloc, typename Class,
              typename Arg = T, typename Result = typename std::result_of<Method(Class*, Arg)>::type,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type>
-    promise<Result> any(Container<Method, Allocator> methods, Class* obj) const
+    promise<Result> any(Container<Method, Alloc> methods, Class* obj) const
     {
-      using task = internal::any_class_task<Result, Arg, Container, Method, Allocator, Class>;
+      using task = internal::any_class_task<Result, Arg, Container, Method, Alloc, Class>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -3290,11 +3290,11 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+    template<template<typename, typename> class Container, typename Method, typename Alloc, typename Class,
              typename Result = typename std::result_of<Method(Class*)>::type>
-    promise<Result> any(Container<Method, Allocator> methods, Class* obj) const
+    promise<Result> any(Container<Method, Alloc> methods, Class* obj) const
     {
-      using task = internal::any_class_task_void<Result, T, Container, Method, Allocator, Class>;
+      using task = internal::any_class_task_void<Result, T, Container, Method, Alloc, Class>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -3305,12 +3305,12 @@ class promise
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator,
+    template<template<typename, typename> class Container, typename Func, typename Alloc,
              typename Arg = T, typename Result = typename std::result_of<Func(Arg)>::type,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type>
-    promise<Result> any(Container<Func, Allocator> funcs) const
+    promise<Result> any(Container<Func, Alloc> funcs) const
     {
-      using task = internal::any_func_task<Result, Arg, Container, Func, Allocator>;
+      using task = internal::any_func_task<Result, Arg, Container, Func, Alloc>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -3321,11 +3321,11 @@ class promise
      * @param funcs - Functions that not receives any result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator,
+    template<template<typename, typename> class Container, typename Func, typename Alloc,
              typename Result = typename std::result_of<Func()>::type>
-    promise<Result> any(Container<Func, Allocator> funcs) const
+    promise<Result> any(Container<Func, Alloc> funcs) const
     {
-      using task = internal::any_func_task_void<Result, T, Container, Func, Allocator>;
+      using task = internal::any_func_task_void<Result, T, Container, Func, Alloc>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -3337,12 +3337,12 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+    template<template<typename, typename> class Container, typename Method, typename Alloc, typename Class,
              typename Arg = T, typename Result = typename std::result_of<Method(Class*, Arg)>::type,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type>
-    promise<Result> race(Container<Method, Allocator> methods, Class* obj) const
+    promise<Result> race(Container<Method, Alloc> methods, Class* obj) const
     {
-      using task = internal::race_class_task<Result, Arg, Container, Method, Allocator, Class>;
+      using task = internal::race_class_task<Result, Arg, Container, Method, Alloc, Class>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -3354,11 +3354,11 @@ class promise
      * @param obj - Object containing the required methods.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+    template<template<typename, typename> class Container, typename Method, typename Alloc, typename Class,
              typename Result = typename std::result_of<Method(Class*)>::type>
-    promise<Result> race(Container<Method, Allocator> methods, Class* obj) const
+    promise<Result> race(Container<Method, Alloc> methods, Class* obj) const
     {
-      using task = internal::race_class_task_void<Result, T, Container, Method, Allocator, Class>;
+      using task = internal::race_class_task_void<Result, T, Container, Method, Alloc, Class>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(methods), obj)};
     }
 
@@ -3369,12 +3369,12 @@ class promise
      * @param funcs - Functions that receives the result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator,
+    template<template<typename, typename> class Container, typename Func, typename Alloc,
              typename Arg = T, typename Result = typename std::result_of<Func(Arg)>::type,
              typename = typename std::enable_if<!std::is_void<Arg>::value>::type>
-    promise<Result> race(Container<Func, Allocator> funcs) const
+    promise<Result> race(Container<Func, Alloc> funcs) const
     {
-      using task = internal::race_func_task<Result, Arg, Container, Func, Allocator>;
+      using task = internal::race_func_task<Result, Arg, Container, Func, Alloc>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -3385,11 +3385,11 @@ class promise
      * @param funcs - Functions that not receives any result of the previous function.
      * @return Promise object.
      */
-    template<template<typename, typename> class Container, typename Func, typename Allocator,
+    template<template<typename, typename> class Container, typename Func, typename Alloc,
              typename Result = typename std::result_of<Func()>::type>
-    promise<Result> race(Container<Func, Allocator> funcs) const
+    promise<Result> race(Container<Func, Alloc> funcs) const
     {
-      using task = internal::race_func_task_void<Result, T, Container, Func, Allocator>;
+      using task = internal::race_func_task_void<Result, T, Container, Func, Alloc>;
       return promise<Result>{std::make_shared<task>(m_task, std::move(funcs))};
     }
 
@@ -3453,14 +3453,14 @@ static promise<Result> make_promise(Func&& func, Args&&... args)
  * @return Promise object.
  */
 template<template<typename, typename> class Container, typename Method,
-         typename Allocator, typename Class, typename... Args,
+         typename Alloc, typename Class, typename... Args,
          typename FuncResult = typename std::result_of<Method(Class*, Args...)>::type,
          typename Result = Container<FuncResult, std::allocator<FuncResult>>,
          typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type,
          typename = typename std::enable_if<internal::is_invocable<Method, Class, Args...>::value>::type>
-static promise<Result> make_promise_all(Container<Method, Allocator> methods, Class* obj, Args&&... args)
+static promise<Result> make_promise_all(Container<Method, Alloc> methods, Class* obj, Args&&... args)
 {
-  using task = internal::make_all_class_task<Result, Container, Method, Allocator, Class, Args...>;
+  using task = internal::make_all_class_task<Result, Container, Method, Alloc, Class, Args...>;
   return promise<Result>{std::make_shared<task>(std::move(methods), obj, std::forward<Args>(args)...)};
 }
 
@@ -3474,13 +3474,13 @@ static promise<Result> make_promise_all(Container<Method, Allocator> methods, Cl
  * @return Promise object.
  */
 template<template<typename, typename> class Container, typename Method,
-         typename Allocator, typename Class, typename... Args,
+         typename Alloc, typename Class, typename... Args,
          typename FuncResult = typename std::result_of<Method(Class*, Args...)>::type,
          typename = typename std::enable_if<std::is_void<FuncResult>::value>::type,
          typename = typename std::enable_if<internal::is_invocable<Method, Class, Args...>::value>::type>
-static promise<void> make_promise_all(Container<Method, Allocator> methods, Class* obj, Args&&... args)
+static promise<void> make_promise_all(Container<Method, Alloc> methods, Class* obj, Args&&... args)
 {
-  using task = internal::make_all_class_task<void, Container, Method, Allocator, Class, Args...>;
+  using task = internal::make_all_class_task<void, Container, Method, Alloc, Class, Args...>;
   return promise<void>{std::make_shared<task>(std::move(methods), obj, std::forward<Args>(args)...)};
 }
 
@@ -3492,13 +3492,13 @@ static promise<void> make_promise_all(Container<Method, Allocator> methods, Clas
  * @param args - Optional arguments.
  * @return Promise object.
  */
-template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
+template<template<typename, typename> class Container, typename Func, typename Alloc, typename... Args,
          typename FuncResult = typename std::result_of<Func(Args...)>::type,
          typename Result = Container<FuncResult, std::allocator<FuncResult>>,
          typename = typename std::enable_if<!std::is_void<FuncResult>::value>::type>
-static promise<Result> make_promise_all(Container<Func, Allocator> funcs, Args&&... args)
+static promise<Result> make_promise_all(Container<Func, Alloc> funcs, Args&&... args)
 {
-  using task = internal::make_all_func_task<Result, Container, Func, Allocator, Args...>;
+  using task = internal::make_all_func_task<Result, Container, Func, Alloc, Args...>;
   return promise<Result>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
 }
 
@@ -3510,12 +3510,12 @@ static promise<Result> make_promise_all(Container<Func, Allocator> funcs, Args&&
  * @param args - Optional arguments.
  * @return Promise object.
  */
-template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
+template<template<typename, typename> class Container, typename Func, typename Alloc, typename... Args,
          typename FuncResult = typename std::result_of<Func(Args...)>::type,
          typename = typename std::enable_if<std::is_void<FuncResult>::value>::type>
-static promise<void> make_promise_all(Container<Func, Allocator> funcs, Args&&... args)
+static promise<void> make_promise_all(Container<Func, Alloc> funcs, Args&&... args)
 {
-  using task = internal::make_all_func_task<void, Container, Func, Allocator, Args...>;
+  using task = internal::make_all_func_task<void, Container, Func, Alloc, Args...>;
   return promise<void>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
 }
 
@@ -3527,13 +3527,13 @@ static promise<void> make_promise_all(Container<Func, Allocator> funcs, Args&&..
  * @param args - Optional arguments.
  * @return Promise object.
  */
-template<template<typename, typename> class Container, typename Method, typename Allocator, typename Class,
+template<template<typename, typename> class Container, typename Method, typename Alloc, typename Class,
          typename... Args, typename FuncResult = typename std::result_of<Method(Class*, Args...)>::type,
          typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>,
          typename = typename std::enable_if<internal::is_invocable<Method, Class, Args...>::value>::type>
-static promise<Result> make_promise_all_settled(Container<Method, Allocator> methods, Class* obj, Args&&... args)
+static promise<Result> make_promise_all_settled(Container<Method, Alloc> methods, Class* obj, Args&&... args)
 {
-  using task = internal::make_all_settled_class_task<Result, FuncResult, Container, Method, Allocator, Class, Args...>;
+  using task = internal::make_all_settled_class_task<Result, FuncResult, Container, Method, Alloc, Class, Args...>;
   return promise<Result>{std::make_shared<task>(std::move(methods), obj, std::forward<Args>(args)...)};
 }
 
@@ -3545,12 +3545,12 @@ static promise<Result> make_promise_all_settled(Container<Method, Allocator> met
  * @param args - Optional arguments.
  * @return Promise object.
  */
-template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
+template<template<typename, typename> class Container, typename Func, typename Alloc, typename... Args,
          typename FuncResult = typename std::result_of<Func(Args...)>::type,
          typename Result = Container<settled<FuncResult>, std::allocator<settled<FuncResult>>>>
-static promise<Result> make_promise_all_settled(Container<Func, Allocator> funcs, Args&&... args)
+static promise<Result> make_promise_all_settled(Container<Func, Alloc> funcs, Args&&... args)
 {
-  using task = internal::make_all_settled_func_task<Result, FuncResult, Container, Func, Allocator, Args...>;
+  using task = internal::make_all_settled_func_task<Result, FuncResult, Container, Func, Alloc, Args...>;
   return promise<Result>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
 }
 
@@ -3564,12 +3564,12 @@ static promise<Result> make_promise_all_settled(Container<Func, Allocator> funcs
  * @return Promise object.
  */
 template<template<typename, typename> class Container, typename Method,
-         typename Allocator, typename Class, typename... Args,
+         typename Alloc, typename Class, typename... Args,
          typename Result = typename std::result_of<Method(Class*, Args...)>::type,
          typename = typename std::enable_if<internal::is_invocable<Method, Class, Args...>::value>::type>
-static promise<Result> make_promise_any(Container<Method, Allocator> methods, Class* obj, Args&&... args)
+static promise<Result> make_promise_any(Container<Method, Alloc> methods, Class* obj, Args&&... args)
 {
-  using task = internal::make_any_class_task<Result, Container, Method, Allocator, Class, Args...>;
+  using task = internal::make_any_class_task<Result, Container, Method, Alloc, Class, Args...>;
   return promise<Result>{std::make_shared<task>(std::move(methods), obj, std::forward<Args>(args)...)};
 }
 
@@ -3581,11 +3581,11 @@ static promise<Result> make_promise_any(Container<Method, Allocator> methods, Cl
  * @param args - Optional arguments.
  * @return Promise object.
  */
-template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
+template<template<typename, typename> class Container, typename Func, typename Alloc, typename... Args,
          typename Result = typename std::result_of<Func(Args...)>::type>
-static promise<Result> make_promise_any(Container<Func, Allocator> funcs, Args&&... args)
+static promise<Result> make_promise_any(Container<Func, Alloc> funcs, Args&&... args)
 {
-  using task = internal::make_any_func_task<Result, Container, Func, Allocator, Args...>;
+  using task = internal::make_any_func_task<Result, Container, Func, Alloc, Args...>;
   return promise<Result>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
 }
 
@@ -3599,12 +3599,12 @@ static promise<Result> make_promise_any(Container<Func, Allocator> funcs, Args&&
  * @return Promise object.
  */
 template<template<typename, typename> class Container, typename Method,
-         typename Allocator, typename Class, typename... Args,
+         typename Alloc, typename Class, typename... Args,
          typename Result = typename std::result_of<Method(Class*, Args...)>::type,
          typename = typename std::enable_if<internal::is_invocable<Method, Class, Args...>::value>::type>
-static promise<Result> make_promise_race(Container<Method, Allocator> methods, Class* obj, Args&&... args)
+static promise<Result> make_promise_race(Container<Method, Alloc> methods, Class* obj, Args&&... args)
 {
-  using task = internal::make_race_class_task<Result, Container, Method, Allocator, Class, Args...>;
+  using task = internal::make_race_class_task<Result, Container, Method, Alloc, Class, Args...>;
   return promise<Result>{std::make_shared<task>(std::move(methods), obj, std::forward<Args>(args)...)};
 }
 
@@ -3616,11 +3616,11 @@ static promise<Result> make_promise_race(Container<Method, Allocator> methods, C
  * @param args - Optional arguments.
  * @return Promise object.
  */
-template<template<typename, typename> class Container, typename Func, typename Allocator, typename... Args,
+template<template<typename, typename> class Container, typename Func, typename Alloc, typename... Args,
          typename Result = typename std::result_of<Func(Args...)>::type>
-static promise<Result> make_promise_race(Container<Func, Allocator> funcs, Args&&... args)
+static promise<Result> make_promise_race(Container<Func, Alloc> funcs, Args&&... args)
 {
-  using task = internal::make_race_func_task<Result, Container, Func, Allocator, Args...>;
+  using task = internal::make_race_func_task<Result, Container, Func, Alloc, Args...>;
   return promise<Result>{std::make_shared<task>(std::move(funcs), std::forward<Args>(args)...)};
 }
 
